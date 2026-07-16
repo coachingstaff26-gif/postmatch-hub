@@ -134,7 +134,7 @@
   .tag{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;font-family:'Oswald',sans-serif;}
   .tag-SL1{background:#DCEAFE;color:var(--blue-600);}
   .tag-Friendly{background:#E7F6EC;color:var(--win);}
-  .tag-Scouting{background:#FDEFE0;color:#B5650B;}
+  .tag-Cup{background:#FDEFE0;color:#B5650B;}
   .meta-right{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;}
 
   .scoreboard{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;gap:8px;}
@@ -275,7 +275,7 @@
       <div class="tabs-inner" id="tabBar">
         <button class="tab-btn active" data-tab="SL1">Super League <span class="count" id="cnt-SL1">0</span></button>
         <button class="tab-btn" data-tab="Friendly">Friendly <span class="count" id="cnt-Friendly">0</span></button>
-        <button class="tab-btn" data-tab="Scouting">Opponent Scouting <span class="count" id="cnt-Scouting">0</span></button>
+        <button class="tab-btn" data-tab="Cup">Cup <span class="count" id="cnt-Cup">0</span></button>
         <button class="tab-btn" data-tab="Teams">Teams</button>
       </div>
     </nav>
@@ -339,7 +339,7 @@
           <select id="f_competition">
             <option value="SL1">Super League</option>
             <option value="Friendly">Friendly</option>
-            <option value="Scouting">Opponent Scouting</option>
+            <option value="Cup">Cup</option>
           </select>
         </div>
         <div class="field" id="roundField"><label>Round</label><input type="number" id="f_round" min="1"></div>
@@ -520,7 +520,7 @@ function renderMatches(){
   if(state.activeTab === 'Teams') return;
   const tabMatches = state.matches.filter(m=>m.competition === state.activeTab);
 
-  ['SL1','Friendly','Scouting'].forEach(t=>{
+  ['SL1','Friendly','Cup'].forEach(t=>{
     $('#cnt-'+t).textContent = state.matches.filter(m=>m.competition===t).length;
   });
 
@@ -569,7 +569,7 @@ function matchCardHtml(m){
   return `
   <div class="match-card" data-id="${m.id}">
     <div class="card-head">
-      <span class="tag tag-${m.competition}">${m.competition === 'SL1' ? 'Super League' : m.competition === 'Friendly' ? 'Friendly' : 'Scouting'}</span>
+      <span class="tag tag-${m.competition}">${m.competition === 'SL1' ? 'Super League' : m.competition === 'Friendly' ? 'Friendly' : 'Cup'}</span>
       <span class="meta-right">${dateStr}</span>
     </div>
     <div class="scoreboard">
