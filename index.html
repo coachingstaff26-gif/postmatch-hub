@@ -3,334 +3,272 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Football team management: roster, tactical line builder and matchday squad selection.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚽</text></svg>">
-<title>Football Team Manager</title>
+<title>Match Scouting Hub</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
   /* ===================== DESIGN TOKENS ===================== */
   :root{
-    --bg:#0b0d12;
-    --surface:#12151c;
-    --surface-2:#171b24;
-    --border:#262b36;
-    --ink:#e7eaf0;
-    --muted:#8a93a6;
-    --brand:#22a869;
-    --brand-dark:#178754;
-    --brand-soft:rgba(34,168,105,.14);
-    --danger:#e0554f;
-    --danger-soft:rgba(224,85,79,.12);
-    --radius-lg:16px;
-    --radius-md:11px;
+    --navy-950:#081226;
+    --navy-900:#0B1F3D;
+    --navy-800:#12294f;
+    --blue-600:#1E4FA3;
+    --blue-500:#2F6FED;
+    --blue-400:#5C8DF2;
+    --ice-50:#F4F7FB;
+    --ice-100:#EAF0FA;
+    --line:#DCE4F0;
+    --ink-900:#0F1728;
+    --ink-600:#3C4A63;
+    --muted:#6B7A94;
+    --white:#FFFFFF;
+    --win:#1C9A5B;
+    --loss:#D64545;
+    --draw:#8C97AC;
+    --radius-lg:18px;
+    --radius-md:12px;
     --radius-sm:8px;
-    --shadow-pop:0 20px 60px rgba(0,0,0,.5);
+    --shadow-card:0 1px 2px rgba(11,31,61,.04), 0 8px 24px rgba(11,31,61,.08);
+    --shadow-pop:0 20px 60px rgba(8,18,38,.35);
   }
   *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
-  h1,h2,h3,.display{font-family:'Oswald',sans-serif;letter-spacing:.02em;}
-  button{font-family:inherit;cursor:pointer;}
+  body{margin:0;background:var(--ice-50);color:var(--ink-900);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.03em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
   a{color:inherit;}
-  ::selection{background:var(--brand);color:#fff;}
+  button{font-family:inherit;cursor:pointer;}
+  ::selection{background:var(--blue-400);color:#fff;}
 
+  /* ===================== SCAFFOLD ===================== */
   .app-shell{min-height:100vh;display:flex;flex-direction:column;}
 
-  header.topbar{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:40;}
-  .topbar-inner{max-width:1200px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;gap:16px;}
-  .brand{display:flex;align-items:center;gap:10px;}
-  .brand-mark{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));
-    display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-  .brand-text{font-family:'Oswald',sans-serif;font-size:17px;font-weight:600;letter-spacing:.03em;}
+  header.topbar{
+    background:linear-gradient(180deg, var(--navy-900) 0%, var(--navy-950) 100%);
+    color:#fff;position:sticky;top:0;z-index:40;
+    box-shadow:0 4px 20px rgba(0,0,0,.25);
+  }
+  .topbar-inner{max-width:1280px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:38px;height:38px;border-radius:9px;
+    background:linear-gradient(135deg, var(--blue-500), var(--blue-600));
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Oswald',sans-serif;font-weight:700;font-size:16px;letter-spacing:0;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.25);
+  }
+  .brand-text{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;letter-spacing:.04em;line-height:1;}
+  .brand-text small{display:block;font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;font-size:11px;color:#9FB3D9;font-weight:400;margin-top:3px;}
+
   .topbar-spacer{flex:1;}
-
-  .pill-status{font-size:11.5px;padding:5px 10px;border-radius:100px;background:var(--surface-2);
-    border:1px solid var(--border);display:flex;align-items:center;gap:6px;color:var(--muted);}
+  .auth-zone{display:flex;align-items:center;gap:10px;}
+  .pill-status{
+    font-size:12px;padding:6px 12px;border-radius:100px;
+    background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+    display:flex;align-items:center;gap:6px;color:#C9D6EF;
+  }
   .dot{width:7px;height:7px;border-radius:50%;background:var(--muted);}
-  .dot.on{background:#3fd17a;box-shadow:0 0 0 3px rgba(63,209,122,.18);}
-  .dot.err{background:var(--danger);}
+  .dot.on{background:#3FD17A;box-shadow:0 0 0 3px rgba(63,209,122,.2);}
 
-  .btn{border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;
-    display:inline-flex;align-items:center;gap:7px;transition:filter .12s ease,transform .1s ease;}
+  .btn{
+    border:none;border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;transition:transform .12s ease, filter .12s ease;
+  }
   .btn:active{transform:scale(.97);}
-  .btn-primary{background:var(--brand);color:#fff;}
+  .btn-primary{background:var(--blue-500);color:#fff;}
   .btn-primary:hover{filter:brightness(1.08);}
-  .btn-ghost{background:var(--surface-2);color:var(--ink);border:1px solid var(--border);}
-  .btn-ghost:hover{background:var(--border);}
-  .btn-danger{background:var(--danger-soft);color:var(--danger);border:1px solid rgba(224,85,79,.35);}
-  .btn-danger:hover{background:rgba(224,85,79,.22);}
-  .btn-sm{padding:6px 11px;font-size:12px;border-radius:7px;}
+  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.18);}
+  .btn-ghost:hover{background:rgba(255,255,255,.14);}
+  .btn-light{background:#fff;color:var(--navy-900);border:1px solid var(--line);}
+  .btn-light:hover{background:var(--ice-100);}
+  .btn-danger{background:#fff;color:var(--loss);border:1px solid #F3CFCF;}
+  .btn-danger:hover{background:#FDF1F1;}
+  .btn-sm{padding:6px 10px;font-size:12px;border-radius:8px;}
   .btn:disabled{opacity:.5;cursor:not-allowed;}
 
-  .user-chip{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);
-    border-radius:100px;padding:5px 6px 5px 12px;font-size:12.5px;}
-  .role-badge{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:100px;}
-  .role-badge.editor{background:var(--brand-soft);color:var(--brand);}
-  .role-badge.viewer{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+  nav.tabs{
+    background:var(--navy-800);border-top:1px solid rgba(255,255,255,.06);
+  }
+  .tabs-inner{max-width:1280px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto;}
+  .tab-btn{
+    background:none;border:none;color:#9FB3D9;padding:12px 16px;font-size:13px;font-weight:600;
+    font-family:'Oswald',sans-serif;letter-spacing:.05em;text-transform:uppercase;
+    border-bottom:3px solid transparent;white-space:nowrap;
+  }
+  .tab-btn.active{color:#fff;border-bottom-color:var(--blue-500);}
+  .tab-btn .count{
+    font-family:'Inter',sans-serif;text-transform:none;letter-spacing:0;
+    background:rgba(255,255,255,.1);border-radius:100px;padding:1px 7px;font-size:11px;margin-left:6px;
+  }
 
-  nav.tabs{background:var(--surface);border-top:1px solid var(--border);}
-  .tabs-inner{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;gap:2px;overflow-x:auto;}
-  .tab-btn{background:none;border:none;color:var(--muted);padding:12px 16px;font-size:13px;font-weight:600;
-    font-family:'Oswald',sans-serif;letter-spacing:.03em;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px;}
-  .tab-btn.active{color:var(--ink);border-bottom-color:var(--brand);}
-  .tab-btn:hover{color:var(--ink);}
+  main{max-width:1280px;margin:0 auto;padding:24px;width:100%;flex:1;}
 
-  main{max-width:1200px;margin:0 auto;padding:24px 20px;width:100%;flex:1;}
-  .view{display:none;}
-  .view.active{display:block;animation:fadeIn .18s ease;}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  /* ===================== TOOLBAR / FILTERS ===================== */
+  .toolbar{
+    display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:20px;
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:12px 14px;
+    box-shadow:var(--shadow-card);
+  }
+  .toolbar input[type=text], .toolbar select, .toolbar input[type=date]{
+    border:1px solid var(--line);border-radius:8px;padding:8px 11px;font-size:13.5px;
+    background:var(--ice-50);color:var(--ink-900);font-family:inherit;
+  }
+  .toolbar input[type=text]{min-width:200px;flex:1;}
+  .toolbar-spacer{flex:1;}
+  .search-wrap{position:relative;flex:1;min-width:200px;}
+  .search-wrap input{width:100%;padding-left:32px;}
+  .search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;}
 
-  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;}
-  .card + .card{margin-top:16px;}
-  .card h2{margin:0 0 4px;font-size:14px;letter-spacing:.03em;}
-  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 18px;}
+  /* ===================== MATCH GRID / CARD ===================== */
+  .match-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(340px,1fr));gap:16px;}
+  .match-card{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .match-card:hover{box-shadow:0 4px 8px rgba(11,31,61,.06), 0 16px 36px rgba(11,31,61,.13);transform:translateY(-2px);}
+  .match-card{cursor:pointer;}
 
-  .empty-state{text-align:center;padding:64px 20px;background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius-lg);}
-  .empty-state .icon{width:48px;height:48px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;}
-  .empty-state h3{margin:0 0 8px;font-size:16px;}
-  .empty-state p{color:var(--muted);font-size:13px;max-width:420px;margin:0 auto;line-height:1.5;}
-  .milestone-tag{display:inline-block;margin-top:14px;font-size:11px;font-weight:600;color:var(--brand);
-    background:var(--brand-soft);border:1px solid rgba(34,168,105,.35);border-radius:100px;padding:5px 12px;}
+  .view-scoreboard{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 18px;}
+  .view-scoreboard .team-logo{width:64px;height:64px;}
+  .view-scoreboard .team-name{max-width:140px;font-size:13.5px;}
+  .view-scoreboard .score-chip{font-size:30px;padding:10px 18px;min-width:96px;}
+  .view-meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .view-links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px;}
+  .view-link-card{
+    display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;
+    background:var(--ice-100);border:1px solid var(--line);text-decoration:none;color:var(--blue-600);
+    font-weight:600;font-size:13.5px;
+  }
+  .view-link-card:hover{background:var(--blue-500);color:#fff;border-color:var(--blue-500);}
+  .view-link-card.empty{opacity:.35;pointer-events:none;}
+  .view-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 4px;}
+  .card-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:var(--ice-100);border-bottom:1px solid var(--line);
+  }
+  .tag{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:100px;font-family:'Oswald',sans-serif;}
+  .tag-SL1{background:#DCEAFE;color:var(--blue-600);}
+  .tag-Friendly{background:#E7F6EC;color:var(--win);}
+  .tag-Cup{background:#FDEFE0;color:#B5650B;}
+  .meta-right{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px;}
 
-  .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
-  .field label{font-size:11.5px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;}
-  .field input{border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:14px;
-    font-family:inherit;background:var(--surface-2);color:var(--ink);}
-  .field input:focus{outline:2px solid var(--brand);outline-offset:-1px;}
-  .field input:disabled{opacity:.6;}
-  .hint{font-size:11.5px;color:var(--muted);line-height:1.5;}
+  .scoreboard{display:flex;align-items:center;justify-content:space-between;padding:20px 16px 14px;gap:8px;}
+  .team-block{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;min-width:0;}
+  .team-logo{
+    width:52px;height:52px;border-radius:50%;background:var(--ice-100);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;
+  }
+  .team-logo img{width:100%;height:100%;object-fit:cover;}
+  .team-logo .fallback{font-family:'Oswald',sans-serif;font-weight:700;font-size:15px;color:var(--blue-600);}
+  .team-name{font-size:12.5px;font-weight:600;text-align:center;line-height:1.25;color:var(--ink-900);max-width:110px;}
 
-  .logo-row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;}
-  .logo-preview{width:76px;height:76px;border-radius:13px;background:var(--surface-2);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;font-size:26px;}
-  .logo-preview img{width:100%;height:100%;object-fit:contain;}
-  .file-btn{display:inline-flex;align-items:center;gap:7px;font-size:12px;}
-  .file-btn input[type=file]{display:none;}
+  .score-chip{
+    background:var(--navy-900);color:#fff;border-radius:10px;padding:8px 14px;
+    font-family:'Oswald',sans-serif;font-size:24px;font-weight:600;letter-spacing:.02em;
+    display:flex;align-items:center;gap:6px;flex-shrink:0;min-width:76px;justify-content:center;
+  }
+  .score-chip .dash{opacity:.4;font-size:16px;}
+  .score-chip.tbd{font-size:13px;font-family:'Inter',sans-serif;font-weight:600;color:#9FB3D9;background:var(--navy-800);}
 
-  .member-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
-  .member-row:last-child{border-bottom:none;}
-  .member-name{font-size:13.5px;font-weight:600;}
-  .member-role{font-size:11.5px;color:var(--muted);text-transform:capitalize;margin-top:2px;}
+  .round-strip{
+    display:flex;align-items:center;gap:10px;padding:0 16px 12px;font-size:11.5px;color:var(--muted);
+    border-bottom:1px dashed var(--line);margin:0 16px 12px;
+  }
+  .round-strip b{color:var(--ink-900);}
 
-  .spinner{width:20px;height:20px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--brand);
-    animation:spin .7s linear infinite;}
-  .spinner.center{margin:40px auto;}
+  .systems-row{padding:0 16px;display:flex;gap:16px;font-size:11.5px;color:var(--ink-600);margin-bottom:10px;flex-wrap:wrap;}
+  .systems-row span b{color:var(--ink-900);}
+
+  .notes-row{padding:0 16px;font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.4;}
+
+  .links-row{padding:0 14px 14px;display:flex;flex-wrap:wrap;gap:7px;margin-top:auto;}
+  .link-pill{
+    display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+    padding:6px 11px;border-radius:100px;background:var(--ice-100);border:1px solid var(--line);
+    color:var(--blue-600);text-decoration:none;
+  }
+  .link-pill:hover{background:var(--blue-500);color:#fff;border-color:var(--blue-500);}
+  .link-pill.empty{opacity:.35;pointer-events:none;background:transparent;}
+
+  .card-actions{
+    display:flex;gap:6px;padding:10px 14px;border-top:1px solid var(--line);background:var(--ice-50);
+  }
+
+  /* ===================== TEAMS TAB ===================== */
+  .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .team-tile{
+    background:#fff;border:1px solid var(--line);border-radius:var(--radius-md);padding:16px 10px;
+    display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:var(--shadow-card);
+  }
+  .team-tile .team-logo{width:56px;height:56px;}
+  .team-tile-name{font-weight:600;font-size:13px;}
+
+  /* ===================== EMPTY / LOADING ===================== */
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--muted);background:#fff;border:1px dashed var(--line);border-radius:var(--radius-lg);
+  }
+  .empty-state h3{color:var(--ink-900);margin-bottom:6px;}
+  .spinner{
+    width:22px;height:22px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--blue-500);
+    animation:spin .7s linear infinite;margin:40px auto;
+  }
   @keyframes spin{to{transform:rotate(360deg);}}
 
-  .modal-overlay{position:fixed;inset:0;background:rgba(6,8,12,.65);backdrop-filter:blur(2px);
-    display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow-y:auto;}
+  /* ===================== MODAL ===================== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(8,18,38,.55);backdrop-filter:blur(2px);
+    display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 16px;overflow-y:auto;
+  }
   .modal-overlay.show{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:400px;
-    box-shadow:var(--shadow-pop);animation:pop .16s ease;}
+  .modal{
+    background:#fff;border-radius:var(--radius-lg);width:100%;max-width:560px;box-shadow:var(--shadow-pop);
+    animation:pop .18s ease;
+  }
   @keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98);}to{opacity:1;transform:none;}}
-  .modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-  .modal-head h3{margin:0;font-size:16px;}
+  .modal-head{
+    padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;
+  }
+  .modal-head h3{margin:0;font-size:17px;}
   .modal-close{background:none;border:none;font-size:20px;color:var(--muted);line-height:1;padding:4px;}
-  .modal-body{padding:20px;}
-  .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+  .modal-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px;max-height:65vh;overflow-y:auto;}
+  .modal-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;}
 
-  .pitch-wrap{max-width:460px;margin:0 auto 20px;}
-  .pitch{position:relative;width:100%;aspect-ratio:68/104;border-radius:12px;overflow:hidden;
-    border:2px solid rgba(255,255,255,.25);
-    background:repeating-linear-gradient(to bottom,#1d5c34 0 12.5%,#1a5430 12.5% 25%);}
-  .pitch-halfway{position:absolute;left:0;right:0;top:50%;height:2px;background:rgba(255,255,255,.35);}
-  .pitch-circle{position:absolute;left:50%;top:50%;width:28%;aspect-ratio:1;border:2px solid rgba(255,255,255,.35);
-    border-radius:50%;transform:translate(-50%,-50%);}
-  .pitch-spot{position:absolute;left:50%;top:50%;width:5px;height:5px;background:rgba(255,255,255,.5);
-    border-radius:50%;transform:translate(-50%,-50%);}
-  .pitch-box{position:absolute;left:20%;width:60%;height:15%;border:2px solid rgba(255,255,255,.35);}
-  .pitch-box-top{top:0;border-top:none;}
-  .pitch-box-bottom{bottom:0;border-bottom:none;}
-  .pitch-box-small{position:absolute;left:35%;width:30%;height:6%;border:2px solid rgba(255,255,255,.35);}
-  .pitch-box-small-top{top:0;border-top:none;}
-  .pitch-box-small-bottom{bottom:0;border-bottom:none;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;font-weight:600;color:var(--ink-600);text-transform:uppercase;letter-spacing:.04em;}
+  .field input, .field select, .field textarea{
+    border:1px solid var(--line);border-radius:8px;padding:9px 11px;font-size:14px;font-family:inherit;
+    background:var(--ice-50);
+  }
+  .field textarea{resize:vertical;min-height:60px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .field-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  .hint{font-size:11.5px;color:var(--muted);}
+  .file-row{display:flex;align-items:center;gap:8px;}
+  .file-row input[type=file]{flex:1;font-size:12px;}
 
-  .slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;
-    align-items:center;gap:2px;cursor:pointer;}
-  .slot-empty{width:34px;height:34px;border-radius:50%;border:2px dashed rgba(255,255,255,.4);
-    display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;
-    color:rgba(255,255,255,.55);background:rgba(255,255,255,.04);}
-  .pitch-chip{width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--brand);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:grab;position:relative;}
-  .pitch-chip.selected{box-shadow:0 0 0 3px rgba(255,255,255,.5);}
-  .pitch-chip img{width:100%;height:100%;object-fit:cover;}
-  .pitch-chip .chip-num{font-size:12px;font-weight:800;color:#fff;}
-  .pitch-chip-label{font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);
-    padding:1px 6px;border-radius:5px;white-space:nowrap;max-width:76px;overflow:hidden;text-overflow:ellipsis;}
-
-  .bench-row{display:flex;gap:12px;flex-wrap:wrap;padding:6px 2px;min-height:60px;}
-  .bench-chip{display:flex;flex-direction:column;align-items:center;gap:5px;width:60px;cursor:grab;}
-  .bench-chip .avatar{width:42px;height:42px;border-radius:50%;background:var(--surface-2);border:2px solid var(--border);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;font-weight:700;color:var(--muted);}
-  .bench-chip.selected .avatar{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft);}
-  .bench-chip .avatar img{width:100%;height:100%;object-fit:cover;}
-  .bench-chip .bname{font-size:10px;color:var(--muted);text-align:center;max-width:60px;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
-  .toolbar-spacer{flex:1;}
-  .search-input{border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13.5px;
-    background:var(--surface-2);color:var(--ink);min-width:220px;font-family:inherit;}
-  .search-input:focus{outline:2px solid var(--brand);outline-offset:-1px;}
-  .select{border:1px solid var(--border);border-radius:8px;padding:9px 30px 9px 12px;font-size:13px;
-    background:var(--surface-2);color:var(--ink);font-family:inherit;appearance:none;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%238a93a6'/></svg>");
-    background-repeat:no-repeat;background-position:right 12px center;}
-  .select:focus{outline:2px solid var(--brand);outline-offset:-1px;}
-
-  .player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;}
-  .player-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
-    padding:16px;position:relative;text-align:center;transition:border-color .12s ease;}
-  .player-card:hover{border-color:#39404f;}
-  .player-card .num-badge{position:absolute;top:10px;left:10px;background:var(--surface-2);border:1px solid var(--border);
-    color:var(--muted);font-size:11px;font-weight:700;border-radius:100px;min-width:22px;height:22px;
-    display:flex;align-items:center;justify-content:center;padding:0 6px;}
-  .player-card .card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .12s ease;}
-  .player-card:hover .card-actions{opacity:1;}
-  .player-card .icon-btn{width:24px;height:24px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);padding:0;}
-  .player-card .icon-btn:hover{background:var(--border);color:var(--ink);}
-  .player-card .photo{width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--surface-2);
-    border:2px solid var(--border);margin:8px auto 10px;display:block;}
-  .player-card .photo-fallback{width:64px;height:64px;border-radius:50%;background:var(--surface-2);border:2px solid var(--border);
-    margin:8px auto 10px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--muted);}
-  .player-card .p-name{font-size:13.5px;font-weight:600;margin-bottom:6px;}
-  .player-card .p-tags{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;}
-  .tag{font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:100px;background:var(--surface-2);
-    border:1px solid var(--border);color:var(--muted);}
-  .tag.pos{color:var(--brand);border-color:rgba(34,168,105,.35);background:var(--brand-soft);}
-
-  .modal-lg{max-width:520px;}
-
-  .mode-switch{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;margin-bottom:16px;}
-  .mode-switch button{flex:1;background:none;border:none;border-radius:7px;padding:8px;font-size:12.5px;font-weight:600;color:var(--muted);}
-  .mode-switch button.active{background:var(--brand);color:#fff;}
-
-  .form-error{font-size:12px;color:var(--danger);background:var(--danger-soft);border:1px solid rgba(224,85,79,.3);
-    border-radius:8px;padding:9px 11px;margin-top:4px;}
-  .form-info{font-size:12px;color:var(--brand);background:var(--brand-soft);border:1px solid rgba(34,168,105,.3);
-    border-radius:8px;padding:9px 11px;margin-top:4px;}
-
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--surface-2);color:var(--ink);
-    border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-size:13px;box-shadow:var(--shadow-pop);
-    z-index:200;display:none;max-width:90vw;}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--navy-900);color:#fff;padding:12px 20px;border-radius:10px;font-size:13.5px;
+    box-shadow:var(--shadow-pop);z-index:200;display:none;max-width:90vw;
+  }
   .toast.show{display:block;}
-  .toast.error{border-color:rgba(224,85,79,.5);color:#ffb3af;}
+  .toast.error{background:#7A2020;}
 
-  .squad-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  @media(max-width:680px){.squad-columns{grid-template-columns:1fr;}}
-  .squad-list{max-height:420px;overflow-y:auto;}
-  .squad-row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border);
-    cursor:pointer;transition:background .1s ease;border-radius:6px;}
-  .squad-row:hover{background:var(--surface-2);}
-  .squad-row:last-child{border-bottom:none;}
-  .squad-row .avatar{width:34px;height:34px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
-    display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:11px;color:var(--muted);flex-shrink:0;}
-  .squad-row .avatar img{width:100%;height:100%;object-fit:cover;}
-  .squad-row .sname{font-size:13px;font-weight:600;}
-  .squad-row .stag{font-size:11px;color:var(--muted);margin-top:1px;}
-  .tag-warn{color:#e0a13f;border-color:rgba(224,161,63,.4);background:rgba(224,161,63,.12);}
-
-  .export-options{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
-  .chk{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--ink);cursor:pointer;user-select:none;}
-  .chk input{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;}
-
-  #exportSheet{position:fixed;top:0;left:-9999px;width:1240px;
-    --ex-bg1:#0c1a2e;--ex-bg2:#0a1420;--ex-text:#eef3fb;--ex-muted:rgba(255,255,255,.45);--ex-muted2:rgba(255,255,255,.3);
-    --ex-accent:#5fb3ff;--ex-circle1:#3ec6ff;--ex-circle2:#1c6fd6;
-    --ex-chip-bg:#0e1c30;--ex-chip-border:rgba(255,255,255,.15);--ex-vs-color:rgba(255,255,255,.32);
-    --ex-badge-bg:rgba(255,255,255,.06);--ex-badge-border:rgba(255,255,255,.14);
-    --ex-panel-bg:rgba(255,255,255,.03);--ex-panel-border:rgba(255,255,255,.1);
-    --ex-divider:rgba(255,255,255,.06);--ex-divider2:rgba(255,255,255,.08);
-    --ex-count-bg:rgba(255,255,255,.08);--ex-count-border:rgba(255,255,255,.16);
-    background:linear-gradient(160deg,var(--ex-bg1),var(--ex-bg2) 65%);color:var(--ex-text);
-    padding:34px;font-family:'Inter',sans-serif;border-radius:20px;}
-
-  #exportSheet[data-theme="white"]{
-    --ex-bg1:#ffffff;--ex-bg2:#f4f6f7;--ex-text:#12151c;--ex-muted:rgba(0,0,0,.5);--ex-muted2:rgba(0,0,0,.35);
-    --ex-accent:#178754;--ex-circle1:#3ec6ff;--ex-circle2:#1c6fd6;
-    --ex-chip-bg:#eef2f5;--ex-chip-border:#dde3ec;--ex-vs-color:rgba(0,0,0,.3);
-    --ex-badge-bg:#eef2f5;--ex-badge-border:#dde3ec;
-    --ex-panel-bg:#f7f9f8;--ex-panel-border:#e3e8e4;
-    --ex-divider:rgba(0,0,0,.08);--ex-divider2:rgba(0,0,0,.1);
-    --ex-count-bg:#eef2f0;--ex-count-border:#dde3de;
+  .fab{
+    position:fixed;bottom:26px;right:26px;z-index:30;
+    background:var(--blue-500);color:#fff;border:none;border-radius:100px;
+    padding:14px 20px;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;
+    box-shadow:0 10px 30px rgba(47,111,237,.4);
   }
-  #exportSheet[data-theme="gray"]{
-    --ex-bg1:#33363d;--ex-bg2:#24262b;--ex-text:#f1f2f4;--ex-muted:rgba(255,255,255,.5);--ex-muted2:rgba(255,255,255,.35);
-    --ex-accent:#c6cad2;--ex-circle1:#9aa1ac;--ex-circle2:#5f6672;
-    --ex-chip-bg:#3d4048;--ex-chip-border:rgba(255,255,255,.18);--ex-vs-color:rgba(255,255,255,.35);
-    --ex-badge-bg:rgba(255,255,255,.07);--ex-badge-border:rgba(255,255,255,.16);
-    --ex-panel-bg:rgba(255,255,255,.04);--ex-panel-border:rgba(255,255,255,.12);
-    --ex-divider:rgba(255,255,255,.08);--ex-divider2:rgba(255,255,255,.1);
-    --ex-count-bg:rgba(255,255,255,.09);--ex-count-border:rgba(255,255,255,.18);
-  }
+  .fab:hover{filter:brightness(1.08);}
 
-  .ex-topbar{display:flex;align-items:center;gap:18px;margin-bottom:6px;}
-  .ex-club{display:flex;align-items:center;gap:14px;min-width:0;}
-  .ex-club-logo,.ex-opponent-logo{width:56px;height:56px;border-radius:50%;object-fit:contain;flex-shrink:0;
-    background:var(--ex-chip-bg);border:2px solid var(--ex-chip-border);}
-  .ex-eyebrow{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ex-accent);font-weight:700;}
-  .ex-team-name{font-size:21px;font-weight:800;font-family:'Oswald',sans-serif;letter-spacing:.01em;color:var(--ex-text);
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;}
-  .ex-vs{font-size:13px;font-weight:800;color:var(--ex-vs-color);padding:0 14px;flex-shrink:0;}
-  .ex-opponent{display:flex;align-items:center;gap:14px;flex-direction:row-reverse;text-align:right;min-width:0;}
-  .ex-spacer{flex:1;}
-  .ex-formation-badge{background:var(--ex-badge-bg);border:1px solid var(--ex-badge-border);border-radius:13px;
-    padding:9px 20px;text-align:center;flex-shrink:0;}
-  .ex-formation-name{font-size:24px;font-weight:800;font-family:'Oswald',sans-serif;color:var(--ex-text);}
-  .ex-datestr{font-size:11.5px;color:var(--ex-muted);margin:14px 0 20px;}
-
-  .ex-body{display:flex;gap:20px;}
-  .ex-pitch-panel{flex:1.35;position:relative;aspect-ratio:68/86;border-radius:16px;overflow:hidden;
-    border:1px solid rgba(255,255,255,.1);
-    background:repeating-linear-gradient(to bottom,#163a24 0 12.5%,#123120 12.5% 25%);}
-  .ex-slot{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;}
-  .ex-slot-circle{width:64px;height:64px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
-    display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:800;color:#fff;
-    border:2px solid rgba(255,255,255,.55);box-shadow:0 4px 10px rgba(0,0,0,.35);overflow:hidden;}
-  .ex-slot-empty{width:64px;height:64px;border-radius:50%;border:2px dashed rgba(255,255,255,.3);
-    display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;color:rgba(255,255,255,.4);}
-  .ex-slot-label{font-size:12.5px;font-weight:800;color:#fff;background:rgba(0,0,0,.55);padding:3px 10px;
-    border-radius:6px;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis;}
-
-  .ex-subs-panel{flex:1;background:var(--ex-panel-bg);border:1px solid var(--ex-panel-border);
-    border-radius:16px;padding:20px;display:flex;flex-direction:column;}
-  .ex-subs-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;}
-  .ex-subs-title{font-size:12.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ex-accent);}
-  .ex-subs-count{width:32px;height:32px;border-radius:50%;background:var(--ex-count-bg);
-    border:1px solid var(--ex-count-border);display:flex;align-items:center;justify-content:center;
-    font-weight:800;font-size:14px;flex-shrink:0;color:var(--ex-text);}
-  .ex-subs-sub{font-size:11px;color:var(--ex-muted2);margin-bottom:12px;}
-  .ex-sub-row{display:flex;align-items:center;gap:12px;padding:8px 2px;border-bottom:1px solid var(--ex-divider);}
-  .ex-sub-num{width:34px;height:34px;border-radius:50%;background:linear-gradient(160deg,var(--ex-circle1),var(--ex-circle2));
-    display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
-  .ex-sub-name{flex:1;font-size:14px;font-weight:700;color:var(--ex-text);}
-  .ex-sub-pos{font-size:11.5px;color:var(--ex-muted);}
-  .ex-staff-block{margin-top:14px;padding-top:12px;border-top:1px solid var(--ex-divider2);}
-  .ex-staff-row{display:flex;justify-content:space-between;font-size:11.5px;padding:3px 0;color:var(--ex-text);opacity:.85;}
-  .ex-staff-row span:last-child{color:var(--ex-muted);opacity:1;}
-  .ex-footer-tag{margin-top:auto;padding-top:12px;text-align:center;font-size:10px;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--ex-muted2);}
-
-  @media print{
-    body > *:not(#exportSheet){display:none !important;}
-    #exportSheet{position:static !important;left:auto !important;width:100% !important;border-radius:0 !important;}
-  }
-
-  footer{text-align:center;padding:20px;font-size:11px;color:var(--muted);}
+  footer{text-align:center;padding:24px;font-size:11.5px;color:var(--muted);}
 
   @media(max-width:640px){
-    .brand-text{display:none;}
+    .field-row,.field-row-3{grid-template-columns:1fr;}
+    .brand-text{font-size:16px;}
     .modal{max-width:100%;}
-    .search-input{min-width:0;flex:1 1 140px;}
-    #playerModal [style*="grid-template-columns:1fr 1fr"],
-    #view-matchSquad [style*="grid-template-columns:1fr 1fr 1fr"]{
-      grid-template-columns:1fr !important;
-    }
   }
 </style>
 </head>
@@ -341,1698 +279,651 @@
     <div class="topbar-inner">
       <div class="brand">
         <div class="brand-mark">⚽</div>
-        <div class="brand-text">TEAM MANAGER</div>
+        <div class="brand-text">MATCH SCOUTING HUB<small>Video &amp; report archive for the coaching staff</small></div>
       </div>
       <div class="topbar-spacer"></div>
-      <span class="pill-status"><span class="dot" id="connDot"></span><span id="connLabel">Connecting…</span></span>
-      <div id="authZone"></div>
+      <div class="auth-zone" id="authZone">
+        <span class="pill-status"><span class="dot" id="connDot"></span><span id="connLabel">Connecting...</span></span>
+        <button class="btn btn-ghost btn-sm" id="loginBtn">Log in</button>
+      </div>
     </div>
     <nav class="tabs">
-      <div class="tabs-inner">
-        <button class="tab-btn active" data-tab="players">Players</button>
-        <button class="tab-btn" data-tab="lineBuilder">Line Builder</button>
-        <button class="tab-btn" data-tab="matchSquad">Match Squad</button>
-        <button class="tab-btn" data-tab="settings">Settings</button>
+      <div class="tabs-inner" id="tabBar">
+        <button class="tab-btn active" data-tab="SL1">Super League <span class="count" id="cnt-SL1">0</span></button>
+        <button class="tab-btn" data-tab="Friendly">Friendly <span class="count" id="cnt-Friendly">0</span></button>
+        <button class="tab-btn" data-tab="Cup">Cup <span class="count" id="cnt-Cup">0</span></button>
+        <button class="tab-btn" data-tab="Teams">Teams</button>
       </div>
     </nav>
   </header>
 
   <main>
-    <div class="view active" id="view-players">
-      <div class="toolbar">
-        <input type="text" class="search-input" id="playerSearch" placeholder="Search players…">
-        <select class="select" id="playerSort">
-          <option value="number">Sort: Shirt number</option>
-          <option value="lastName">Sort: Last name</option>
-          <option value="position">Sort: Position</option>
-        </select>
-        <div class="toolbar-spacer"></div>
-        <button class="btn btn-primary btn-sm" id="addPlayerBtn" style="display:none;">+ Add player</button>
+    <!-- Toolbar (matches tabs) -->
+    <div class="toolbar" id="matchToolbar">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search by team, system, notes...">
       </div>
-
-      <div id="playersEmpty" class="empty-state" style="display:none;">
-        <div class="icon">👥</div>
-        <h3 id="playersEmptyTitle">No players yet</h3>
-        <p id="playersEmptyText">Add your first player to start building the roster.</p>
-      </div>
-
-      <div class="player-grid" id="playerGrid"></div>
+      <select id="roundFilter"><option value="">All rounds</option></select>
+      <select id="sortOrder">
+        <option value="desc">Newest first</option>
+        <option value="asc">Oldest first</option>
+      </select>
     </div>
 
-    <div class="view" id="view-lineBuilder">
+    <div id="matchesView"><div class="spinner"></div></div>
+
+    <!-- Teams tab -->
+    <div id="teamsView" style="display:none;">
       <div class="toolbar">
-        <select class="select" id="lineupSelect"></select>
-        <button class="btn btn-ghost btn-sm" id="newLineupBtn">+ New lineup</button>
-        <button class="btn btn-ghost btn-sm" id="clearLineupBtn">Clear</button>
-        <button class="btn btn-danger btn-sm" id="deleteLineupBtn">🗑 Delete</button>
+        <div style="flex:1;font-size:13.5px;color:var(--ink-600);">All teams (opponents + your own club). Add a new team or logo here and it will show up everywhere in the app.</div>
+        <button class="btn btn-primary btn-sm" id="addTeamBtn" style="display:none;">+ Add team</button>
       </div>
-      <div class="toolbar">
-        <select class="select" id="formationSelect"></select>
-        <select class="select" id="displayModeSelect">
-          <option value="photo">Photo only</option>
-          <option value="number">Number only</option>
-          <option value="name">Name only</option>
-          <option value="photo_number">Photo + Number</option>
-          <option value="photo_name">Photo + Name</option>
-          <option value="number_name">Number + Name</option>
-          <option value="photo_number_name">Photo + Number + Name</option>
-        </select>
-      </div>
-
-      <div class="pitch-wrap">
-        <div class="pitch" id="pitch"></div>
-      </div>
-
-      <div class="card">
-        <h2>Substitutes</h2>
-        <p class="sub">Drag a player onto the pitch, or tap a player then tap a pitch slot.</p>
-        <div class="bench-row" id="benchRow"></div>
-      </div>
-
-      <div class="card">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <h2 style="margin-bottom:2px;">Staff</h2>
-            <p class="sub" style="margin-bottom:0;">Coaching and support staff.</p>
-          </div>
-          <button class="btn btn-primary btn-sm" id="addStaffBtn" style="display:none;">+ Add staff</button>
-        </div>
-        <div id="staffList" style="margin-top:14px;"></div>
-      </div>
-    </div>
-
-    <div class="view" id="view-matchSquad">
-      <div class="card">
-        <h2>Match info</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px;">
-          <div class="field"><label>Opponent</label><input type="text" id="msOpponent" placeholder="e.g. AEK"></div>
-          <div class="field"><label>Match date</label><input type="date" id="msDate"></div>
-          <div class="field"><label>Squad size</label>
-            <select class="select" id="msSquadSize">
-              <option value="18">18 players</option>
-              <option value="20">20 players</option>
-              <option value="22">22 players</option>
-              <option value="23">23 players</option>
-            </select>
-          </div>
-        </div>
-        <div class="logo-row" style="margin-top:14px;">
-          <div class="logo-preview" id="opponentLogoPreview" style="width:52px;height:52px;">🛡️</div>
-          <div>
-            <label class="btn btn-ghost btn-sm file-btn" id="opponentLogoBtn">
-              <span id="opponentLogoLabel">Upload opponent logo</span>
-              <input type="file" id="opponentLogoInput" accept="image/*">
-            </label>
-            <p class="hint" style="margin-top:6px;">Shown in the exported sheet next to your club's logo. Optional.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="squad-columns">
-        <div class="card">
-          <h2>Selected <span class="tag" id="selectedCount" style="margin-left:4px;"></span></h2>
-          <p class="sub">Tap or drag a player to move them to Not selected.</p>
-          <div class="squad-list" id="selectedList"></div>
-        </div>
-        <div class="card">
-          <h2>Not selected</h2>
-          <p class="sub">Tap or drag a player to add them to the squad.</p>
-          <div class="squad-list" id="notSelectedList"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Export</h2>
-        <p class="sub">Club logo, match squad, starting XI, formation, substitutes and staff — ready to share or print.</p>
-        <div class="export-options">
-          <label class="chk"><input type="checkbox" id="optPhotos" checked> Player photos</label>
-          <label class="chk"><input type="checkbox" id="optNumbers" checked> Shirt numbers</label>
-          <label class="chk"><input type="checkbox" id="optNames" checked> Player names</label>
-          <label class="chk"><input type="checkbox" id="optSubs" checked> Include substitutes</label>
-          <label class="chk"><input type="checkbox" id="optStaff" checked> Include staff</label>
-        </div>
-        <div style="margin-bottom:16px;">
-          <select class="select" id="exportTheme">
-            <option value="blue">Background: Blue</option>
-            <option value="white">Background: White</option>
-            <option value="gray">Background: Gray</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-secondary btn-sm" id="exportPdfBtn">⬇ Export PDF</button>
-          <button class="btn btn-secondary btn-sm" id="exportPngBtn">⬇ Export PNG</button>
-          <button class="btn btn-secondary btn-sm" id="printBtn">🖨 Print</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="view" id="view-settings">
-      <div class="card" id="notConfiguredCard" style="display:none;">
-        <h2>Not connected to Supabase yet</h2>
-        <p class="hint">Open <code>index.html</code>, find <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> near the top of the &lt;script&gt; tag at the bottom of the file, and fill in your own values from Supabase → Project Settings → API. Then run <code>supabase/schema.sql</code> in the SQL editor.</p>
-      </div>
-
-      <div id="settingsContent" style="display:none;">
-        <div class="card">
-          <h2>Club profile</h2>
-          <p class="sub">Name and logo, used across the app and in exports later.</p>
-          <div class="logo-row">
-            <div class="logo-preview" id="logoPreview">⚽</div>
-            <div style="flex:1;min-width:220px;">
-              <div class="field">
-                <label>Club name</label>
-                <input type="text" id="clubNameInput" placeholder="e.g. Panathinaikos AC">
-              </div>
-              <label class="btn btn-ghost btn-sm file-btn" id="uploadLogoBtn">
-                <span id="uploadLogoLabel">Upload logo</span>
-                <input type="file" id="logoFileInput" accept="image/*">
-              </label>
-              <div style="margin-top:12px;">
-                <button class="btn btn-primary btn-sm" id="saveClubBtn">Save</button>
-              </div>
-              <div class="form-error" id="clubError" style="display:none;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h2>Team members</h2>
-          <p class="sub">Editors can add, edit and delete data. Viewers can only look. Promote or demote anyone here.</p>
-          <div id="membersList"><div class="spinner center"></div></div>
-        </div>
-      </div>
+      <div class="team-grid" id="teamGrid"><div class="spinner"></div></div>
     </div>
   </main>
 
-  <footer>Football Team Manager · data stored in Supabase</footer>
+  <footer>Match Scouting Hub · data stored in Supabase</footer>
 </div>
 
-<!-- AUTH MODAL -->
-<div class="modal-overlay" id="authModal">
+<button class="fab" id="addMatchFab" style="display:none;">+ New match</button>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
   <div class="modal">
-    <div class="modal-head"><h3 id="authModalTitle">Sign in</h3><button class="modal-close" data-close="authModal">&times;</button></div>
+    <div class="modal-head"><h3>Staff login</h3><button class="modal-close" data-close="loginModal">&times;</button></div>
     <div class="modal-body">
-      <div class="mode-switch">
-        <button id="modeSignIn" class="active">Sign in</button>
-        <button id="modeSignUp">Sign up</button>
-      </div>
-      <div class="field" id="fullNameField" style="display:none;">
-        <label>Full name</label>
-        <input type="text" id="authFullName" autocomplete="name">
-      </div>
-      <div class="field">
-        <label>Email</label>
-        <input type="email" id="authEmail" autocomplete="username">
-      </div>
-      <div class="field">
-        <label>Password</label>
-        <input type="password" id="authPassword" autocomplete="current-password">
-      </div>
-      <p class="hint">Viewers can see everything. Editors can add, edit and delete. New accounts start as Viewer — the very first account on a fresh project becomes Editor automatically.</p>
-      <div class="form-error" id="authError" style="display:none;"></div>
-      <div class="form-info" id="authInfo" style="display:none;"></div>
+      <p class="hint">Viewing the data is public for everyone. Logging in is only needed to add or edit matches and teams. Accounts are created by the admin in the Supabase dashboard (Authentication → Users).</p>
+      <div class="field"><label>Email</label><input type="text" id="loginEmail" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input type="password" id="loginPass" autocomplete="current-password"></div>
+      <div class="hint" id="loginError" style="color:var(--loss);"></div>
     </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost btn-sm" data-close="authModal">Cancel</button>
-      <button class="btn btn-primary btn-sm" id="authSubmit">Sign in</button>
+      <button class="btn btn-light" data-close="loginModal">Cancel</button>
+      <button class="btn btn-primary" id="loginSubmit">Log in</button>
     </div>
   </div>
 </div>
 
-<!-- PLAYER MODAL -->
-<div class="modal-overlay" id="playerModal">
-  <div class="modal modal-lg">
-    <div class="modal-head"><h3 id="playerModalTitle">Add player</h3><button class="modal-close" data-close="playerModal">&times;</button></div>
+<!-- MATCH MODAL -->
+<div class="modal-overlay" id="matchModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="matchModalTitle">New match</h3><button class="modal-close" data-close="matchModal">&times;</button></div>
     <div class="modal-body">
-      <div class="logo-row" style="margin-bottom:18px;">
-        <div class="logo-preview" id="playerPhotoPreview">👤</div>
-        <div>
-          <label class="btn btn-ghost btn-sm file-btn">
-            <span id="playerPhotoLabel">Upload photo</span>
-            <input type="file" id="playerPhotoInput" accept="image/*">
-          </label>
-          <p class="hint" style="margin-top:6px;">Square photos look best. Optional.</p>
-        </div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 14px;">
-        <div class="field"><label>First name</label><input type="text" id="pFirstName"></div>
-        <div class="field"><label>Last name</label><input type="text" id="pLastName"></div>
-        <div class="field"><label>Shirt number</label><input type="number" id="pNumber" min="1" max="99"></div>
-        <div class="field"><label>Preferred foot</label>
-          <select class="select" id="pFoot">
-            <option value="">—</option>
-            <option value="Left">Left</option>
-            <option value="Right">Right</option>
-            <option value="Both">Both</option>
+      <div class="field-row">
+        <div class="field"><label>Competition</label>
+          <select id="f_competition">
+            <option value="SL1">Super League</option>
+            <option value="Friendly">Friendly</option>
+            <option value="Cup">Cup</option>
           </select>
         </div>
-        <div class="field"><label>Primary position</label><select class="select" id="pPosPrimary"></select></div>
-        <div class="field"><label>Secondary position</label><select class="select" id="pPosSecondary"></select></div>
-        <div class="field"><label>Height (cm)</label><input type="number" id="pHeight" min="120" max="230"></div>
-        <div class="field"><label>Weight (kg)</label><input type="number" id="pWeight" min="30" max="150"></div>
+        <div class="field" id="roundField"><label>Round</label><input type="number" id="f_round" min="1"></div>
       </div>
-
-      <div class="form-error" id="playerError" style="display:none;"></div>
+      <div class="field-row">
+        <div class="field"><label>Date</label><input type="date" id="f_date"></div>
+        <div class="field"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Home team</label><select id="f_home"></select></div>
+        <div class="field"><label>Away team</label><select id="f_away"></select></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Home goals</label><input type="number" id="f_home_score" min="0"></div>
+        <div class="field"><label>Away goals</label><input type="number" id="f_away_score" min="0"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>System (ours)</label><input type="text" id="f_system" placeholder="e.g. 4-3-3"></div>
+        <div class="field"><label>Opponent system</label><input type="text" id="f_opp_system" placeholder="e.g. 4-2-3-1"></div>
+      </div>
+      <div class="field"><label>Link - Full match</label><input type="text" id="f_full_match" placeholder="https://..."></div>
+      <div class="field"><label>Link - Highlights</label><input type="text" id="f_highlights" placeholder="https://..."></div>
+      <div class="field"><label>Link - Video</label><input type="text" id="f_video" placeholder="https://..."></div>
+      <div class="field">
+        <label>Match report (PDF)</label>
+        <div class="file-row">
+          <input type="text" id="f_report" placeholder="Link to the PDF (or upload a file →)">
+          <input type="file" id="f_report_file" accept="application/pdf">
+        </div>
+        <span class="hint" id="reportUploadHint"></span>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="f_notes" placeholder="Observations, tactical notes..."></textarea></div>
     </div>
-    <div class="modal-foot" style="justify-content:space-between;">
-      <button class="btn btn-danger btn-sm" id="deletePlayerBtn" style="display:none;">Delete player</button>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost btn-sm" data-close="playerModal">Cancel</button>
-        <button class="btn btn-primary btn-sm" id="savePlayerBtn">Save player</button>
-      </div>
+    <div class="modal-foot">
+      <button class="btn btn-danger" id="deleteMatchBtn" style="display:none;">Delete</button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-light" data-close="matchModal">Cancel</button>
+      <button class="btn btn-primary" id="saveMatchBtn">Save</button>
     </div>
   </div>
 </div>
 
-<!-- STAFF MODAL -->
-<div class="modal-overlay" id="staffModal">
+<!-- MATCH VIEW MODAL (read-only detail view opened by clicking a card) -->
+<div class="modal-overlay" id="viewModal">
   <div class="modal">
-    <div class="modal-head"><h3 id="staffModalTitle">Add staff</h3><button class="modal-close" data-close="staffModal">&times;</button></div>
-    <div class="modal-body">
-      <div class="field"><label>Name</label><input type="text" id="sName"></div>
-      <div class="field"><label>Role</label><input type="text" id="sRole" list="staffRoles" placeholder="e.g. Head Coach"></div>
-      <datalist id="staffRoles">
-        <option value="Head Coach"><option value="Assistant Coach"><option value="Goalkeeper Coach">
-        <option value="Fitness Coach"><option value="Physiotherapist"><option value="Team Manager"><option value="Doctor">
-      </datalist>
-      <div class="form-error" id="staffError" style="display:none;"></div>
+    <div class="modal-head"><h3 id="viewModalTitle">Match details</h3><button class="modal-close" data-close="viewModal">&times;</button></div>
+    <div class="modal-body" id="viewModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-light" data-close="viewModal">Close</button>
+      <button class="btn btn-primary" id="viewEditBtn" style="display:none;">Edit this match</button>
     </div>
-    <div class="modal-foot" style="justify-content:space-between;">
-      <button class="btn btn-danger btn-sm" id="deleteStaffBtn" style="display:none;">Delete</button>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost btn-sm" data-close="staffModal">Cancel</button>
-        <button class="btn btn-primary btn-sm" id="saveStaffBtn">Save</button>
+  </div>
+</div>
+
+<!-- TEAM MODAL -->
+<div class="modal-overlay" id="teamModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="teamModalTitle">Add team</h3><button class="modal-close" data-close="teamModal">&times;</button></div>
+    <div class="modal-body">
+      <div class="field" id="currentLogoField" style="display:none;">
+        <label>Current logo</label>
+        <div class="team-logo" id="currentLogoPreview" style="width:56px;height:56px;"></div>
+      </div>
+      <div class="field"><label>Team name</label><input type="text" id="t_name" placeholder="e.g. Panathinaikos"></div>
+      <div class="field">
+        <label id="logoFieldLabel">Logo (optional)</label>
+        <input type="file" id="t_logo_file" accept="image/*">
+        <span class="hint">PNG/JPG, ideally a square logo. Leave empty to keep the current logo.</span>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- CONFIRM MODAL (replaces native confirm()) -->
-<div class="modal-overlay" id="confirmModal">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-body" style="padding-top:24px;">
-      <p id="confirmMessage" style="font-size:14px;margin:0;"></p>
-    </div>
     <div class="modal-foot">
-      <button class="btn btn-ghost btn-sm" id="confirmCancelBtn">Cancel</button>
-      <button class="btn btn-danger btn-sm" id="confirmOkBtn">Delete</button>
+      <button class="btn btn-danger" id="deleteTeamBtn" style="display:none;">Delete</button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-light" data-close="teamModal">Cancel</button>
+      <button class="btn btn-primary" id="saveTeamBtn">Save team</button>
     </div>
   </div>
 </div>
-
-<!-- PROMPT MODAL (for naming a new lineup) -->
-<div class="modal-overlay" id="promptModal">
-  <div class="modal" style="max-width:360px;">
-    <div class="modal-head"><h3 id="promptTitle">Name this lineup</h3><button class="modal-close" data-close="promptModal">&times;</button></div>
-    <div class="modal-body">
-      <input type="text" class="input" id="promptInput">
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-ghost btn-sm" id="promptCancelBtn">Cancel</button>
-      <button class="btn btn-primary btn-sm" id="promptOkBtn">Save</button>
-    </div>
-  </div>
-</div>
-
-<div id="exportSheet"></div>
 
 <div class="toast" id="toast"></div>
 
 <script>
 /* ======================================================================
-   1) CONFIGURATION — fill this in with your own Supabase project details
+   1) CONFIGURATION - fill this in with your own Supabase details
    Supabase Dashboard -> Project Settings -> API
    ====================================================================== */
-const SUPABASE_URL = "https://rflgdbasrdxtjnvuhctj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_lLcJkMMyvzh2ueCYzfMAzg_xjbHbwEZ";
+const SUPABASE_URL = "https://hxqlqgotdczrvtcodjro.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_G4lysz6UZERcdfQbMllksw_PP6ZZRz-";
 
-const isConfigured = !SUPABASE_URL.includes('YOUR_SUPABASE') && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
-const sb = isConfigured ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-
-const CLUB_SETTINGS_ID = '00000000-0000-0000-0000-000000000001';
-
-// Position codes shared with the Line Builder's formation slots (Milestone 3),
-// so a player's primary position lines up with pitch roles later.
-const POSITIONS = ['GK','LB','CB','RB','LWB','RWB','DM','CM','AM','LM','RM','LW','RW','ST'];
-
-// Same singleton pattern for the matchday squad (Milestone 4).
-const CURRENT_MATCH_SQUAD_ID = '00000000-0000-0000-0000-000000000003';
-
-const PITCH_MARKINGS = `
-  <div class="pitch-halfway"></div>
-  <div class="pitch-circle"></div>
-  <div class="pitch-spot"></div>
-  <div class="pitch-box pitch-box-top"></div>
-  <div class="pitch-box-small pitch-box-small-top"></div>
-  <div class="pitch-box pitch-box-bottom"></div>
-  <div class="pitch-box-small pitch-box-small-bottom"></div>
-`;
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: false } // login lasts while the page is open
+});
 
 /* ======================================================================
    2) STATE
    ====================================================================== */
 let state = {
+  teams: [],
+  matches: [],
   session: null,
-  profile: null,       // { id, full_name, role }
-  activeTab: 'players',
-  authMode: 'sign-in',
-  members: [],
-  club: null,
-  players: [],
-  playerSearch: '',
-  playerSort: 'number',
-  editingPlayerId: null,
-  pendingPhotoFile: null,
-  existingPhotoUrl: null,
-  formations: [],
-  savedLineups: [],
-  activeLineupId: null,
-  lineup: null,
-  lineupPlayers: [],
-  staff: [],
-  editingStaffId: null,
-  selectedPlayerId: null,
-  selectedSource: null,
-  dragPlayerId: null,
-  dragSource: null,
-  matchSquad: null,
-  matchSquadPlayers: [],
-  loaded: { players: false, staff: false, squad: false },
+  activeTab: 'SL1',
+  editingMatchId: null,
 };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
-const isEditor = () => state.profile?.role === 'editor';
 
 function toast(msg, isError){
   const t = $('#toast');
   t.textContent = msg;
-  t.className = 'toast show' + (isError ? ' error' : '');
-  setTimeout(() => { t.className = 'toast'; }, 3200);
+  t.className = 'toast show' + (isError ? ' error':'');
+  setTimeout(()=> t.className='toast', 3200);
 }
 
 /* ======================================================================
-   3) INIT
+   3) INIT / CONFIG CHECK
    ====================================================================== */
 async function init(){
-  bindStaticEvents();
-
-  if(!isConfigured){
+  if(SUPABASE_URL.includes('YOUR_SUPABASE') || SUPABASE_ANON_KEY.includes('YOUR_SUPABASE')){
     $('#connLabel').textContent = 'Not configured';
-    $('#connDot').classList.add('err');
-    $('#notConfiguredCard').style.display = 'block';
-    renderAuthZone();
+    $('#matchesView').innerHTML = `<div class="empty-state"><h3>The app isn't connected to Supabase yet</h3>
+      <p>Open <code>index.html</code>, find <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> near the top of the &lt;script&gt; tag, and enter your own values from Supabase Project Settings → API.</p></div>`;
     return;
   }
-
   try{
-    const { data: { session } } = await sb.auth.getSession();
-    state.session = session;
-    if(session) await loadProfile(session.user.id);
-
+    await loadTeams();
+    await loadMatches();
     $('#connDot').classList.add('on');
     $('#connLabel').textContent = 'Connected';
   }catch(e){
     console.error(e);
-    $('#connDot').classList.add('err');
     $('#connLabel').textContent = 'Connection error';
-    toast('Could not reach Supabase — check the URL/key and that schema.sql was run.', true);
+    toast('Error: check the Supabase URL/key and whether schema.sql was run.', true);
   }
 
-  sb.auth.onAuthStateChange(async (_event, session) => {
+  const { data: { session } } = await sb.auth.getSession();
+  state.session = session;
+  refreshAuthUI();
+
+  sb.auth.onAuthStateChange((_event, session)=>{
     state.session = session;
-    if(session){
-      await loadProfile(session.user.id);
-    }else{
-      state.profile = null;
+    refreshAuthUI();
+  });
+}
+
+function refreshAuthUI(){
+  const loggedIn = !!state.session;
+  $('#loginBtn').textContent = loggedIn ? ('Log out (' + (state.session.user.email||'') + ')') : 'Log in';
+  $('#addMatchFab').style.display = loggedIn && state.activeTab !== 'Teams' ? 'flex' : 'none';
+  $('#addTeamBtn').style.display = loggedIn ? 'inline-flex' : 'none';
+  renderMatches();
+  renderTeams();
+}
+
+/* ======================================================================
+   4) DATA LOADING
+   ====================================================================== */
+async function loadTeams(){
+  const { data, error } = await sb.from('teams').select('*').order('name');
+  if(error) throw error;
+  state.teams = data || [];
+  populateTeamSelects();
+}
+
+async function loadMatches(){
+  const { data, error } = await sb.from('matches')
+    .select('*, home:home_team_id(id,name,logo_url), away:away_team_id(id,name,logo_url)')
+    .order('match_date', { ascending: false });
+  if(error) throw error;
+  state.matches = data || [];
+  populateRoundFilter();
+  renderMatches();
+}
+
+function populateTeamSelects(){
+  const opts = state.teams.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  $('#f_home').innerHTML = opts;
+  $('#f_away').innerHTML = opts;
+}
+
+function populateRoundFilter(){
+  const rounds = [...new Set(state.matches.filter(m=>m.round).map(m=>m.round))].sort((a,b)=>a-b);
+  $('#roundFilter').innerHTML = '<option value="">All rounds</option>' + rounds.map(r=>`<option value="${r}">Round ${r}</option>`).join('');
+}
+
+/* ======================================================================
+   5) RENDER: MATCHES
+   ====================================================================== */
+function renderMatches(){
+  if(state.activeTab === 'Teams') return;
+  const tabMatches = state.matches.filter(m=>m.competition === state.activeTab);
+
+  ['SL1','Friendly','Cup'].forEach(t=>{
+    $('#cnt-'+t).textContent = state.matches.filter(m=>m.competition===t).length;
+  });
+
+  const search = ($('#searchInput').value||'').toLowerCase();
+  const roundVal = $('#roundFilter').value;
+  const sortAsc = $('#sortOrder').value === 'asc';
+
+  let list = tabMatches.filter(m=>{
+    if(roundVal && String(m.round) !== roundVal) return false;
+    if(search){
+      const hay = [m.home?.name, m.away?.name, m.system, m.opp_system, m.notes].join(' ').toLowerCase();
+      if(!hay.includes(search)) return false;
     }
-    renderAuthZone();
-    renderSettings();
-    renderPlayers();
-    renderPitch();
-    renderBench();
-    renderStaff();
-    renderMatchSquad();
+    return true;
+  }).sort((a,b)=>{
+    const da = a.match_date||'', db = b.match_date||'';
+    return sortAsc ? da.localeCompare(db) : db.localeCompare(da);
   });
 
-  renderAuthZone();
-  loadClubSettings();
-  loadMembers();
-  loadPlayers();
-  loadFormations().then(loadLineups).then(loadLineupPlayers);
-  loadStaff();
-  loadMatchSquad().then(loadMatchSquadPlayers);
-
-  // Realtime: keep every connected user in sync, no refresh needed.
-  sb.channel('realtime:club_settings')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'club_settings' }, loadClubSettings)
-    .subscribe();
-  sb.channel('realtime:profiles')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-      loadMembers();
-      if(state.session) loadProfile(state.session.user.id).then(renderAuthZone);
-    })
-    .subscribe();
-  sb.channel('realtime:players')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, loadPlayers)
-    .subscribe();
-  sb.channel('realtime:formations')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'formations' }, loadFormations)
-    .subscribe();
-  sb.channel('realtime:lineups')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineups' }, loadLineups)
-    .subscribe();
-  sb.channel('realtime:lineup_players')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'lineup_players' }, loadLineupPlayers)
-    .subscribe();
-  sb.channel('realtime:staff')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, loadStaff)
-    .subscribe();
-  sb.channel('realtime:match_squads')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'match_squads' }, loadMatchSquad)
-    .subscribe();
-  sb.channel('realtime:match_squad_players')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'match_squad_players' }, loadMatchSquadPlayers)
-    .subscribe();
-}
-
-async function loadProfile(userId){
-  const { data, error } = await sb.from('profiles').select('*').eq('id', userId).single();
-  if(error){ console.error(error); return; }
-  state.profile = data;
-}
-
-/* ======================================================================
-   4) TABS
-   ====================================================================== */
-function bindStaticEvents(){
-  bindConfirmDialog();
-  bindPromptDialog();
-
-  $$('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-  });
-
-  $$('[data-close]').forEach(btn => {
-    btn.addEventListener('click', () => closeModal(btn.dataset.close));
-  });
-
-  $('#modeSignIn').addEventListener('click', () => setAuthMode('sign-in'));
-  $('#modeSignUp').addEventListener('click', () => setAuthMode('sign-up'));
-  $('#authSubmit').addEventListener('click', submitAuth);
-
-  $('#saveClubBtn').addEventListener('click', saveClubSettings);
-  $('#logoFileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) uploadLogo(file);
-  });
-
-  $('#playerSearch').addEventListener('input', (e) => {
-    state.playerSearch = e.target.value;
-    renderPlayers();
-  });
-  $('#playerSort').addEventListener('change', (e) => {
-    state.playerSort = e.target.value;
-    renderPlayers();
-  });
-  $('#addPlayerBtn').addEventListener('click', () => openPlayerModal(null));
-  $('#playerPhotoInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) previewPlayerPhoto(file);
-  });
-  $('#savePlayerBtn').addEventListener('click', savePlayer);
-  $('#deletePlayerBtn').addEventListener('click', deletePlayer);
-
-  const posPrimary = $('#pPosPrimary');
-  const posSecondary = $('#pPosSecondary');
-  posPrimary.innerHTML = POSITIONS.map(p => `<option value="${p}">${p}</option>`).join('');
-  posSecondary.innerHTML = '<option value="">—</option>' + POSITIONS.map(p => `<option value="${p}">${p}</option>`).join('');
-
-  $('#formationSelect').addEventListener('change', onFormationChange);
-  $('#displayModeSelect').addEventListener('change', onDisplayModeChange);
-  $('#lineupSelect').addEventListener('change', onLineupSelectChange);
-  $('#newLineupBtn').addEventListener('click', newLineup);
-  $('#clearLineupBtn').addEventListener('click', clearLineup);
-  $('#deleteLineupBtn').addEventListener('click', deleteLineup);
-
-  $('#pitch').addEventListener('dragover', (e) => e.preventDefault());
-  $('#pitch').addEventListener('drop', (e) => {
-    e.preventDefault();
-    const slotEl = e.target.closest('.slot');
-    if(slotEl) handleDrop(slotEl.dataset.slot);
-  });
-  $('#benchRow').addEventListener('dragover', (e) => e.preventDefault());
-  $('#benchRow').addEventListener('drop', (e) => {
-    e.preventDefault();
-    handleDrop(null);
-  });
-
-  $('#addStaffBtn').addEventListener('click', () => openStaffModal(null));
-  $('#saveStaffBtn').addEventListener('click', saveStaff);
-  $('#deleteStaffBtn').addEventListener('click', deleteStaff);
-
-  $('#msOpponent').addEventListener('blur', saveMatchInfo);
-  $('#msDate').addEventListener('change', saveMatchInfo);
-  $('#msSquadSize').addEventListener('change', onSquadSizeChange);
-  $('#opponentLogoInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) uploadOpponentLogo(file);
-  });
-
-  $('#selectedList').addEventListener('dragover', (e) => e.preventDefault());
-  $('#selectedList').addEventListener('drop', (e) => {
-    e.preventDefault();
-    if(state.dragPlayerId) addToSquad(state.dragPlayerId);
-    state.dragPlayerId = null;
-  });
-  $('#notSelectedList').addEventListener('dragover', (e) => e.preventDefault());
-  $('#notSelectedList').addEventListener('drop', (e) => {
-    e.preventDefault();
-    if(state.dragPlayerId) removeFromSquad(state.dragPlayerId);
-    state.dragPlayerId = null;
-  });
-
-  $('#exportPdfBtn').addEventListener('click', exportPDF);
-  $('#exportPngBtn').addEventListener('click', exportPNG);
-  $('#printBtn').addEventListener('click', printSquad);
-}
-
-function switchTab(tab){
-  state.activeTab = tab;
-  $$('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-  $$('.view').forEach(v => v.classList.remove('active'));
-  $('#view-' + tab).classList.add('active');
-}
-
-/* ======================================================================
-   5) AUTH
-   ====================================================================== */
-function renderAuthZone(){
-  const zone = $('#authZone');
-  if(!state.session){
-    zone.innerHTML = `<button class="btn btn-primary btn-sm" id="openAuthBtn">Sign in</button>`;
-    $('#openAuthBtn').addEventListener('click', () => openModal('authModal'));
-    return;
-  }
-  const role = state.profile?.role || 'viewer';
-  const name = state.profile?.full_name || state.session.user.email;
-  zone.innerHTML = `
-    <div class="user-chip">
-      <span>${escapeHtml(name)}</span>
-      <span class="role-badge ${role}">${role}</span>
-      <button class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
-    </div>`;
-  $('#signOutBtn').addEventListener('click', async () => { await sb.auth.signOut(); toast('Signed out'); });
-}
-
-function setAuthMode(mode){
-  state.authMode = mode;
-  $('#modeSignIn').classList.toggle('active', mode === 'sign-in');
-  $('#modeSignUp').classList.toggle('active', mode === 'sign-up');
-  $('#fullNameField').style.display = mode === 'sign-up' ? 'flex' : 'none';
-  $('#authModalTitle').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
-  $('#authSubmit').textContent = mode === 'sign-in' ? 'Sign in' : 'Create account';
-  $('#authError').style.display = 'none';
-  $('#authInfo').style.display = 'none';
-}
-
-async function submitAuth(){
-  const email = $('#authEmail').value.trim();
-  const password = $('#authPassword').value;
-  const fullName = $('#authFullName').value.trim();
-  const errEl = $('#authError');
-  const infoEl = $('#authInfo');
-  errEl.style.display = 'none';
-  infoEl.style.display = 'none';
-
-  if(!email || !password){
-    errEl.textContent = 'Email and password are required.';
-    errEl.style.display = 'block';
+  if(list.length === 0){
+    $('#matchesView').innerHTML = `<div class="empty-state"><h3>No matches yet</h3><p>${state.session ? 'Add the first match with the "+ New match" button in the bottom right.' : 'Once staff add matches, they will show up here.'}</p></div>`;
     return;
   }
 
-  $('#authSubmit').disabled = true;
-  let result;
-  if(state.authMode === 'sign-in'){
-    result = await sb.auth.signInWithPassword({ email, password });
-  }else{
-    result = await sb.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
-  }
-  $('#authSubmit').disabled = false;
+  $('#matchesView').innerHTML = `<div class="match-grid">${list.map(matchCardHtml).join('')}</div>`;
 
-  if(result.error){
-    errEl.textContent = result.error.message;
-    errEl.style.display = 'block';
-    return;
-  }
-
-  if(state.authMode === 'sign-up'){
-    infoEl.textContent = 'Account created. If email confirmation is on, check your inbox, then sign in.';
-    infoEl.style.display = 'block';
-    setAuthMode('sign-in');
-    return;
-  }
-
-  closeModal('authModal');
-  toast('Signed in');
-}
-
-/* ======================================================================
-   6) MODALS
-   ====================================================================== */
-function openModal(id){ $('#' + id).classList.add('show'); }
-function closeModal(id){ $('#' + id).classList.remove('show'); }
-
-let _confirmResolve = null;
-function confirmDialog(message, okLabel){
-  $('#confirmMessage').textContent = message;
-  $('#confirmOkBtn').textContent = okLabel || 'Delete';
-  openModal('confirmModal');
-  return new Promise((resolve) => { _confirmResolve = resolve; });
-}
-function bindConfirmDialog(){
-  $('#confirmCancelBtn').addEventListener('click', () => {
-    closeModal('confirmModal');
-    if(_confirmResolve){ _confirmResolve(false); _confirmResolve = null; }
-  });
-  $('#confirmOkBtn').addEventListener('click', () => {
-    closeModal('confirmModal');
-    if(_confirmResolve){ _confirmResolve(true); _confirmResolve = null; }
+  $$('.match-card').forEach(el=>{
+    el.addEventListener('click', ()=> openMatchViewModal(el.dataset.id));
+    el.querySelector('.js-edit')?.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openMatchModal(el.dataset.id);
+    });
   });
 }
 
-let _promptResolve = null;
-function promptDialog(title, placeholder){
-  $('#promptTitle').textContent = title;
-  $('#promptInput').value = '';
-  $('#promptInput').placeholder = placeholder || '';
-  openModal('promptModal');
-  setTimeout(() => $('#promptInput').focus(), 50);
-  return new Promise((resolve) => { _promptResolve = resolve; });
-}
-function bindPromptDialog(){
-  $('#promptCancelBtn').addEventListener('click', () => {
-    closeModal('promptModal');
-    if(_promptResolve){ _promptResolve(null); _promptResolve = null; }
-  });
-  $('#promptOkBtn').addEventListener('click', () => {
-    const val = $('#promptInput').value.trim();
-    closeModal('promptModal');
-    if(_promptResolve){ _promptResolve(val || null); _promptResolve = null; }
-  });
-  $('#promptInput').addEventListener('keydown', (e) => {
-    if(e.key === 'Enter') $('#promptOkBtn').click();
-  });
+function logoHtml(team){
+  if(team && team.logo_url) return `<img src="${team.logo_url}" alt="${escapeHtml(team.name)}">`;
+  const initials = team ? team.name.slice(0,2).toUpperCase() : '?';
+  return `<span class="fallback">${initials}</span>`;
 }
 
-/* ======================================================================
-   7) SETTINGS — club profile + team members (fully working in Milestone 1)
-   ====================================================================== */
-function renderSettings(){
-  $('#settingsContent').style.display = isConfigured ? 'block' : 'none';
-  const editable = isEditor();
-  $('#clubNameInput').disabled = !editable;
-  $('#saveClubBtn').style.display = editable ? 'inline-flex' : 'none';
-  $('#uploadLogoBtn').style.display = editable ? 'inline-flex' : 'none';
-  renderMembers();
+function linkPill(url, label, icon){
+  if(!url) return `<span class="link-pill empty">${icon} ${label}</span>`;
+  return `<a class="link-pill" href="${url}" target="_blank" rel="noopener">${icon} ${label}</a>`;
 }
 
-async function loadClubSettings(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('club_settings').select('*').eq('id', CLUB_SETTINGS_ID).maybeSingle();
-  if(error){ console.error(error); toast('Could not load club settings: ' + error.message, true); return; }
-  state.club = data;
-  $('#clubNameInput').value = data?.club_name || '';
-  $('#logoPreview').innerHTML = data?.club_logo_url
-    ? `<img src="${data.club_logo_url}" alt="Club logo">`
-    : '⚽';
-  renderSettings();
-}
-
-async function saveClubSettings(){
-  const errEl = $('#clubError');
-  errEl.style.display = 'none';
-  const club_name = $('#clubNameInput').value.trim();
-  const { error } = await sb.from('club_settings').upsert({ id: CLUB_SETTINGS_ID, club_name });
-  if(error){
-    errEl.textContent = error.message;
-    errEl.style.display = 'block';
-    return;
-  }
-  toast('Club profile saved');
-}
-
-async function uploadLogo(file){
-  $('#uploadLogoLabel').textContent = 'Uploading…';
-  const ext = file.name.split('.').pop();
-  const path = `club-logo-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await sb.storage.from('club-assets').upload(path, file, { upsert: true });
-  if(uploadError){
-    toast(uploadError.message, true);
-    $('#uploadLogoLabel').textContent = 'Upload logo';
-    return;
-  }
-  const { data: publicUrl } = sb.storage.from('club-assets').getPublicUrl(path);
-  const club_name = $('#clubNameInput').value.trim() || state.club?.club_name || 'My Club';
-  const { error: updateError } = await sb.from('club_settings')
-    .upsert({ id: CLUB_SETTINGS_ID, club_logo_url: publicUrl.publicUrl, club_name });
-
-  $('#uploadLogoLabel').textContent = 'Upload logo';
-  if(updateError){ toast(updateError.message, true); return; }
-  toast('Logo updated');
-}
-
-async function loadMembers(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('profiles').select('*').order('created_at', { ascending: true });
-  if(error){ console.error(error); toast('Could not load team members: ' + error.message, true); return; }
-  state.members = data || [];
-  renderMembers();
-}
-
-function renderMembers(){
-  const el = $('#membersList');
-  if(!state.members.length){
-    el.innerHTML = '<p class="hint">No team members yet.</p>';
-    return;
-  }
-  const editable = isEditor();
-  el.innerHTML = state.members.map(m => `
-    <div class="member-row">
-      <div>
-        <div class="member-name">${escapeHtml(m.full_name || 'Unnamed user')}</div>
-        <div class="member-role">${m.role}</div>
-      </div>
-      ${editable ? `<button class="btn btn-ghost btn-sm" data-toggle-role="${m.id}" data-current-role="${m.role}">
-        Make ${m.role === 'editor' ? 'Viewer' : 'Editor'}
-      </button>` : ''}
+function matchCardHtml(m){
+  const hasScore = m.home_score !== null && m.home_score !== undefined && m.away_score !== null && m.away_score !== undefined;
+  const dateStr = m.match_date ? new Date(m.match_date+'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : 'Date TBD';
+  return `
+  <div class="match-card" data-id="${m.id}">
+    <div class="card-head">
+      <span class="tag tag-${m.competition}">${m.competition === 'SL1' ? 'Super League' : m.competition === 'Friendly' ? 'Friendly' : 'Cup'}</span>
+      <span class="meta-right">${dateStr}</span>
     </div>
-  `).join('');
+    <div class="scoreboard">
+      <div class="team-block"><div class="team-logo">${logoHtml(m.home)}</div><div class="team-name">${escapeHtml(m.home?.name||'?')}</div></div>
+      <div class="score-chip ${hasScore?'':'tbd'}">${hasScore ? `${m.home_score}<span class="dash">:</span>${m.away_score}` : 'TBD'}</div>
+      <div class="team-block"><div class="team-logo">${logoHtml(m.away)}</div><div class="team-name">${escapeHtml(m.away?.name||'?')}</div></div>
+    </div>
+    ${m.round ? `<div class="round-strip"><b>Round ${m.round}</b></div>` : `<div class="round-strip" style="border-color:transparent;margin-bottom:0;"></div>`}
+    ${(m.system || m.opp_system) ? `<div class="systems-row">${m.system?`<span>Our system: <b>${escapeHtml(m.system)}</b></span>`:''}${m.opp_system?`<span>Opponent: <b>${escapeHtml(m.opp_system)}</b></span>`:''}</div>` : ''}
+    ${m.notes ? `<div class="notes-row">${escapeHtml(m.notes)}</div>` : ''}
+    <div class="links-row">
+      ${linkPill(m.full_match_url,'Full match','▶')}
+      ${linkPill(m.highlights_url,'Highlights','★')}
+      ${linkPill(m.video_url,'Video','🎥')}
+      ${linkPill(m.report_url,'Report','📄')}
+    </div>
+    ${state.session ? `<div class="card-actions"><button class="btn btn-light btn-sm js-edit">Edit / delete</button></div>` : ''}
+  </div>`;
+}
+
+/* ======================================================================
+   6) RENDER: TEAMS
+   ====================================================================== */
+function renderTeams(){
+  if(state.teams.length === 0){
+    $('#teamGrid').innerHTML = `<div class="empty-state"><h3>No teams yet</h3></div>`;
+    return;
+  }
+  const editable = !!state.session;
+  $('#teamGrid').innerHTML = state.teams.map(t=>`
+    <div class="team-tile${editable ? ' js-team-tile' : ''}" data-id="${t.id}" style="${editable ? 'cursor:pointer;' : ''}">
+      <div class="team-logo">${logoHtml(t)}</div>
+      <div class="team-tile-name">${escapeHtml(t.name)}</div>
+      ${editable ? `<span class="hint">Click to edit</span>` : ''}
+    </div>`).join('');
 
   if(editable){
-    $$('[data-toggle-role]').forEach(btn => {
-      btn.addEventListener('click', () => toggleRole(btn.dataset.toggleRole, btn.dataset.currentRole));
+    $$('.js-team-tile').forEach(el=>{
+      el.addEventListener('click', ()=> openTeamModal(el.dataset.id));
     });
   }
 }
 
-async function toggleRole(id, currentRole){
-  const nextRole = currentRole === 'editor' ? 'viewer' : 'editor';
-  const { error } = await sb.from('profiles').update({ role: nextRole }).eq('id', id);
-  if(error){ toast(error.message, true); return; }
-  toast('Role updated');
-}
-
 /* ======================================================================
-   8) PLAYERS
+   7) TABS
    ====================================================================== */
-async function loadPlayers(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('players').select('*');
-  if(error){ console.error(error); toast('Could not load players: ' + error.message, true); return; }
-  state.players = data || [];
-  state.loaded.players = true;
-  renderPlayers();
-  renderBench();
-  renderMatchSquad();
-}
-
-function filteredSortedPlayers(){
-  const q = state.playerSearch.trim().toLowerCase();
-  let list = state.players.filter(p => {
-    if(!q) return true;
-    const haystack = `${p.first_name} ${p.last_name} ${p.shirt_number ?? ''} ${p.primary_position}`.toLowerCase();
-    return haystack.includes(q);
+$$('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    $$('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.activeTab = btn.dataset.tab;
+    const isTeams = state.activeTab === 'Teams';
+    $('#matchToolbar').style.display = isTeams ? 'none' : 'flex';
+    $('#matchesView').style.display = isTeams ? 'none' : 'block';
+    $('#teamsView').style.display = isTeams ? 'block' : 'none';
+    $('#addMatchFab').style.display = (!isTeams && state.session) ? 'flex' : 'none';
+    if(!isTeams) renderMatches(); else renderTeams();
   });
-
-  list.sort((a, b) => {
-    if(state.playerSort === 'number'){
-      if(a.shirt_number == null) return 1;
-      if(b.shirt_number == null) return -1;
-      return a.shirt_number - b.shirt_number;
-    }
-    if(state.playerSort === 'position'){
-      return a.primary_position.localeCompare(b.primary_position) || a.last_name.localeCompare(b.last_name);
-    }
-    return a.last_name.localeCompare(b.last_name);
-  });
-  return list;
-}
-
-function renderPlayers(){
-  const editable = isEditor();
-  $('#addPlayerBtn').style.display = editable ? 'inline-flex' : 'none';
-
-  const grid = $('#playerGrid');
-  const empty = $('#playersEmpty');
-
-  if(!state.loaded.players){
-    grid.innerHTML = '<div class="spinner center"></div>';
-    empty.style.display = 'none';
-    return;
-  }
-
-  const list = filteredSortedPlayers();
-
-  if(!state.players.length){
-    grid.innerHTML = '';
-    empty.style.display = 'block';
-    $('#playersEmptyTitle').textContent = 'No players yet';
-    $('#playersEmptyText').textContent = editable
-      ? 'Add your first player to start building the roster.'
-      : 'An editor hasn\'t added any players yet.';
-    return;
-  }
-  if(!list.length){
-    grid.innerHTML = '';
-    empty.style.display = 'block';
-    $('#playersEmptyTitle').textContent = 'No matches';
-    $('#playersEmptyText').textContent = 'Try a different search term.';
-    return;
-  }
-  empty.style.display = 'none';
-
-  grid.innerHTML = list.map(p => `
-    <div class="player-card">
-      <span class="num-badge">${p.shirt_number ?? '–'}</span>
-      ${editable ? `
-        <div class="card-actions">
-          <button class="icon-btn" data-edit-player="${p.id}" title="Edit">✎</button>
-        </div>` : ''}
-      ${p.photo_url
-        ? `<img class="photo" src="${p.photo_url}" alt="${escapeHtml(p.first_name)}">`
-        : `<div class="photo-fallback">👤</div>`}
-      <div class="p-name">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
-      <div class="p-tags">
-        <span class="tag pos">${p.primary_position}</span>
-        ${p.secondary_position ? `<span class="tag">${p.secondary_position}</span>` : ''}
-        ${p.preferred_foot ? `<span class="tag">${p.preferred_foot}</span>` : ''}
-      </div>
-    </div>
-  `).join('');
-
-  if(editable){
-    $$('[data-edit-player]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const player = state.players.find(p => p.id === btn.dataset.editPlayer);
-        if(player) openPlayerModal(player);
-      });
-    });
-  }
-}
-
-function openPlayerModal(player){
-  state.editingPlayerId = player ? player.id : null;
-  state.pendingPhotoFile = null;
-  state.existingPhotoUrl = player ? player.photo_url : null;
-
-  $('#playerModalTitle').textContent = player ? 'Edit player' : 'Add player';
-  $('#deletePlayerBtn').style.display = player ? 'inline-flex' : 'none';
-  $('#playerError').style.display = 'none';
-  $('#playerPhotoLabel').textContent = 'Upload photo';
-
-  $('#pFirstName').value = player?.first_name || '';
-  $('#pLastName').value = player?.last_name || '';
-  $('#pNumber').value = player?.shirt_number ?? '';
-  $('#pFoot').value = player?.preferred_foot || '';
-  $('#pPosPrimary').value = player?.primary_position || POSITIONS[0];
-  $('#pPosSecondary').value = player?.secondary_position || '';
-  $('#pHeight').value = player?.height_cm ?? '';
-  $('#pWeight').value = player?.weight_kg ?? '';
-
-  $('#playerPhotoPreview').innerHTML = player?.photo_url
-    ? `<img src="${player.photo_url}" alt="">`
-    : '👤';
-
-  openModal('playerModal');
-}
-
-function previewPlayerPhoto(file){
-  state.pendingPhotoFile = file;
-  const url = URL.createObjectURL(file);
-  $('#playerPhotoPreview').innerHTML = `<img src="${url}" alt="">`;
-}
-
-async function savePlayer(){
-  const errEl = $('#playerError');
-  errEl.style.display = 'none';
-
-  const first_name = $('#pFirstName').value.trim();
-  const last_name = $('#pLastName').value.trim();
-  if(!first_name || !last_name){
-    errEl.textContent = 'First and last name are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  const id = state.editingPlayerId || crypto.randomUUID();
-  const payload = {
-    id,
-    first_name,
-    last_name,
-    shirt_number: $('#pNumber').value ? Number($('#pNumber').value) : null,
-    primary_position: $('#pPosPrimary').value,
-    secondary_position: $('#pPosSecondary').value || null,
-    height_cm: $('#pHeight').value ? Number($('#pHeight').value) : null,
-    weight_kg: $('#pWeight').value ? Number($('#pWeight').value) : null,
-    preferred_foot: $('#pFoot').value || null,
-  };
-
-  $('#savePlayerBtn').disabled = true;
-
-  if(state.pendingPhotoFile){
-    const ext = state.pendingPhotoFile.name.split('.').pop();
-    const path = `${id}-${Date.now()}.${ext}`;
-    const { error: uploadError } = await sb.storage.from('player-photos').upload(path, state.pendingPhotoFile, { upsert: true });
-    if(uploadError){
-      errEl.textContent = uploadError.message;
-      errEl.style.display = 'block';
-      $('#savePlayerBtn').disabled = false;
-      return;
-    }
-    const { data: publicUrl } = sb.storage.from('player-photos').getPublicUrl(path);
-    payload.photo_url = publicUrl.publicUrl;
-  }
-
-  const { error } = await sb.from('players').upsert(payload);
-  $('#savePlayerBtn').disabled = false;
-
-  if(error){
-    errEl.textContent = error.message;
-    errEl.style.display = 'block';
-    return;
-  }
-
-  closeModal('playerModal');
-  toast(state.editingPlayerId ? 'Player updated' : 'Player added');
-}
-
-async function deletePlayer(){
-  if(!state.editingPlayerId) return;
-  if(!(await confirmDialog('Delete this player? This cannot be undone.'))) return;
-
-  const { error } = await sb.from('players').delete().eq('id', state.editingPlayerId);
-  if(error){ toast(error.message, true); return; }
-
-  closeModal('playerModal');
-  toast('Player deleted');
-}
+});
+['searchInput','roundFilter','sortOrder'].forEach(id=> $('#'+id).addEventListener('input', renderMatches));
 
 /* ======================================================================
-   9) LINE BUILDER
+   8) AUTH
    ====================================================================== */
-async function loadFormations(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('formations').select('*').order('name');
-  if(error){ console.error(error); toast('Could not load formations: ' + error.message, true); return; }
-  state.formations = data || [];
-  $('#formationSelect').innerHTML = state.formations.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
-  if(state.lineup) $('#formationSelect').value = state.lineup.formation_id;
-  renderPitch();
-}
-
-async function loadLineups(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('lineups').select('*').order('created_at', { ascending: true });
-  if(error){ console.error(error); toast('Could not load lineups: ' + error.message, true); return; }
-
-  state.savedLineups = data || [];
-
-  if(!state.savedLineups.length){
-    const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
-    const { data: created, error: createError } = await sb.from('lineups')
-      .insert({ name: 'Default lineup', formation_id: defaultFormation, display_mode: 'photo_number_name' })
-      .select().single();
-    if(createError){ console.error(createError); toast('Could not create a default lineup: ' + createError.message, true); return; }
-    state.savedLineups = [created];
+$('#loginBtn').addEventListener('click', async ()=>{
+  if(state.session){
+    await sb.auth.signOut();
+    toast('Logged out.');
+  } else {
+    $('#loginError').textContent = '';
+    openModal('loginModal');
   }
+});
 
-  if(!state.activeLineupId || !state.savedLineups.find(l => l.id === state.activeLineupId)){
-    state.activeLineupId = state.savedLineups[0].id;
-  }
-
-  state.lineup = state.savedLineups.find(l => l.id === state.activeLineupId) || null;
-
-  $('#lineupSelect').innerHTML = state.savedLineups.map(l => `<option value="${l.id}">${escapeHtml(l.name)}</option>`).join('');
-  $('#lineupSelect').value = state.activeLineupId;
-
-  if(state.lineup){
-    $('#formationSelect').value = state.lineup.formation_id;
-    $('#displayModeSelect').value = state.lineup.display_mode;
-  }
-  renderPitch();
-}
-
-async function onLineupSelectChange(e){
-  state.activeLineupId = e.target.value;
-  state.lineup = state.savedLineups.find(l => l.id === state.activeLineupId) || null;
-  if(state.lineup){
-    $('#formationSelect').value = state.lineup.formation_id;
-    $('#displayModeSelect').value = state.lineup.display_mode;
-  }
-  await loadLineupPlayers();
-}
-
-async function newLineup(){
-  const name = await promptDialog('Name this lineup', 'e.g. vs AEK — Home');
-  if(!name) return;
-  const defaultFormation = state.formations[0]?.id || 'f-4-3-3';
-  const { data, error } = await sb.from('lineups')
-    .insert({ name, formation_id: defaultFormation, display_mode: 'photo_number_name' })
-    .select().single();
-  if(error){ toast(error.message, true); return; }
-  state.activeLineupId = data.id;
-  await loadLineups();
-  await loadLineupPlayers();
-  toast('New lineup created');
-}
-
-async function clearLineup(){
-  if(!state.activeLineupId) return;
-  if(!(await confirmDialog('Clear this lineup? Every player returns to the bench.', 'Clear'))) return;
-  await sb.from('lineup_players').delete().eq('lineup_id', state.activeLineupId);
-  await loadLineupPlayers();
-  toast('Lineup cleared');
-}
-
-async function deleteLineup(){
-  if(!state.activeLineupId) return;
-  if(state.savedLineups.length <= 1){
-    toast('You need to keep at least one lineup.', true);
-    return;
-  }
-  if(!(await confirmDialog('Delete this saved lineup? This cannot be undone.', 'Delete'))) return;
-  await sb.from('lineups').delete().eq('id', state.activeLineupId);
-  state.activeLineupId = null;
-  await loadLineups();
-  await loadLineupPlayers();
-  toast('Lineup deleted');
-}
-
-async function loadLineupPlayers(){
-  if(!isConfigured || !state.activeLineupId) return;
-  const { data, error } = await sb.from('lineup_players').select('*').eq('lineup_id', state.activeLineupId);
-  if(error){ console.error(error); toast('Could not load lineup players: ' + error.message, true); return; }
-  state.lineupPlayers = data || [];
-  renderPitch();
-  renderBench();
-}
-
-function currentFormation(){
-  return state.formations.find(f => f.id === state.lineup?.formation_id);
-}
-
-function chipInner(player, mode){
-  const fields = mode.split('_'); // e.g. "photo_number_name" -> ['photo','number','name']
-  const showPhoto = fields.includes('photo');
-  const showNumber = fields.includes('number');
-  const showName = fields.includes('name');
-
-  let circle;
-  if(showPhoto && player.photo_url) circle = `<img src="${player.photo_url}" alt="">`;
-  else if(showNumber) circle = `<span class="chip-num">${player.shirt_number ?? ''}</span>`;
-  else if(showPhoto) circle = `<span class="chip-num">${(player.last_name || '?')[0]}</span>`;
-  else circle = `<span class="chip-num">${(player.last_name || '?')[0]}</span>`;
-
-  let label = '';
-  if(showName || (showNumber && showPhoto)){
-    const bits = [];
-    if(showNumber && showPhoto) bits.push(player.shirt_number ?? '');
-    if(showName) bits.push(player.last_name);
-    label = `<div class="pitch-chip-label">${escapeHtml(bits.filter(Boolean).join(' · '))}</div>`;
-  }
-  return { circle, label };
-}
-
-function renderPitch(){
-  const pitch = $('#pitch');
-  const formation = currentFormation();
-  if(!formation){ pitch.innerHTML = ''; return; }
-
-  const mode = state.lineup?.display_mode || 'photo_number_name';
-  const editable = isEditor();
-  $('#newLineupBtn').style.display = editable ? 'inline-flex' : 'none';
-  $('#clearLineupBtn').style.display = editable ? 'inline-flex' : 'none';
-  $('#deleteLineupBtn').style.display = editable ? 'inline-flex' : 'none';
-  $('#formationSelect').disabled = !editable;
-  $('#displayModeSelect').disabled = !editable;
-  const bySlot = {};
-  state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
-
-  const slotsHtml = formation.slots.map(slot => {
-    const lp = bySlot[slot.id];
-    const player = lp ? state.players.find(p => p.id === lp.player_id) : null;
-
-    if(player){
-      const { circle, label } = chipInner(player, mode);
-      const selected = state.selectedPlayerId === player.id;
-      return `<div class="slot" style="left:${slot.x}%;top:${slot.y}%;" data-slot="${slot.id}">
-        <div class="pitch-chip${selected ? ' selected' : ''}" draggable="${editable}" data-player="${player.id}" data-source="slot:${slot.id}">${circle}</div>
-        ${label}
-      </div>`;
-    }
-    return `<div class="slot" style="left:${slot.x}%;top:${slot.y}%;" data-slot="${slot.id}">
-      <div class="slot-empty">${slot.role}</div>
-    </div>`;
-  }).join('');
-
-  pitch.innerHTML = PITCH_MARKINGS + slotsHtml;
-
-  $$('#pitch .slot').forEach(slotEl => {
-    slotEl.addEventListener('click', () => handleSlotClick(slotEl.dataset.slot));
-  });
-  if(editable){
-    $$('#pitch .pitch-chip').forEach(chipEl => {
-      chipEl.addEventListener('dragstart', () => {
-        state.dragPlayerId = chipEl.dataset.player;
-        state.dragSource = chipEl.dataset.source;
-      });
-    });
-  }
-}
-
-function renderBench(){
-  const editable = isEditor();
-  const onPitchIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
-  const benchPlayers = state.players.filter(p => !onPitchIds.has(p.id));
-  const row = $('#benchRow');
-
-  if(!state.players.length){
-    row.innerHTML = '<p class="hint">No players yet — add players in the Players tab first.</p>';
-    return;
-  }
-  if(!benchPlayers.length){
-    row.innerHTML = '<p class="hint">Everyone is on the pitch.</p>';
-    return;
-  }
-
-  row.innerHTML = benchPlayers.map(p => `
-    <div class="bench-chip${state.selectedPlayerId === p.id ? ' selected' : ''}" draggable="${editable}" data-player="${p.id}">
-      <div class="avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : (p.shirt_number ?? '👤')}</div>
-      <div class="bname">${escapeHtml(p.last_name)}</div>
-    </div>
-  `).join('');
-
-  if(editable){
-    $$('#benchRow .bench-chip').forEach(chipEl => {
-      chipEl.addEventListener('click', () => handleBenchClick(chipEl.dataset.player));
-      chipEl.addEventListener('dragstart', () => {
-        state.dragPlayerId = chipEl.dataset.player;
-        state.dragSource = 'bench';
-      });
-    });
-  }
-}
-
-function handleSlotClick(slotId){
-  if(!isEditor()) return;
-
-  if(state.selectedPlayerId){
-    assignOrMove(state.selectedPlayerId, state.selectedSource, slotId);
-    state.selectedPlayerId = null;
-    state.selectedSource = null;
-    return;
-  }
-
-  const lp = state.lineupPlayers.find(x => x.slot_id === slotId);
-  if(lp){
-    state.selectedPlayerId = lp.player_id;
-    state.selectedSource = 'slot:' + slotId;
-    renderPitch();
-    renderBench();
-  }
-}
-
-function handleBenchClick(playerId){
-  if(!isEditor()) return;
-  if(state.selectedPlayerId === playerId){
-    state.selectedPlayerId = null;
-    state.selectedSource = null;
-  }else{
-    state.selectedPlayerId = playerId;
-    state.selectedSource = 'bench';
-  }
-  renderPitch();
-  renderBench();
-}
-
-function handleDrop(targetSlotId){
-  if(!isEditor() || !state.dragPlayerId) return;
-  assignOrMove(state.dragPlayerId, state.dragSource, targetSlotId);
-  state.dragPlayerId = null;
-  state.dragSource = null;
-}
-
-async function assignOrMove(playerId, source, targetSlotId){
-  const existingRow = state.lineupPlayers.find(x => x.player_id === playerId);
-
-  if(targetSlotId === null){
-    if(existingRow) await sb.from('lineup_players').delete().eq('id', existingRow.id);
-    await loadLineupPlayers();
-    return;
-  }
-
-  const occupant = state.lineupPlayers.find(x => x.slot_id === targetSlotId && x.player_id !== playerId);
-  if(occupant){
-    if(source && source.startsWith('slot:')){
-      const sourceSlotId = source.split(':')[1];
-      await sb.from('lineup_players').update({ slot_id: sourceSlotId }).eq('id', occupant.id);
-    }else{
-      await sb.from('lineup_players').delete().eq('id', occupant.id);
-    }
-  }
-
-  if(existingRow){
-    await sb.from('lineup_players').update({ slot_id: targetSlotId, is_starting: true }).eq('id', existingRow.id);
-  }else{
-    await sb.from('lineup_players').insert({ lineup_id: state.activeLineupId, player_id: playerId, slot_id: targetSlotId, is_starting: true });
-  }
-
-  await loadLineupPlayers();
-}
-
-async function onFormationChange(e){
-  const formationId = e.target.value;
-  await sb.from('lineups').update({ formation_id: formationId }).eq('id', state.activeLineupId);
-
-  const formation = state.formations.find(f => f.id === formationId);
-  const validSlotIds = new Set((formation?.slots || []).map(s => s.id));
-  const invalid = state.lineupPlayers.filter(lp => lp.slot_id && !validSlotIds.has(lp.slot_id));
-  for(const lp of invalid){
-    await sb.from('lineup_players').delete().eq('id', lp.id);
-  }
-
-  await loadLineups();
-  await loadLineupPlayers();
-  toast('Formation changed');
-}
-
-async function onDisplayModeChange(e){
-  await sb.from('lineups').update({ display_mode: e.target.value }).eq('id', state.activeLineupId);
-  await loadLineups();
-}
+$('#loginSubmit').addEventListener('click', async ()=>{
+  const email = $('#loginEmail').value.trim();
+  const password = $('#loginPass').value;
+  if(!email || !password){ $('#loginError').textContent = 'Enter your email and password.'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ $('#loginError').textContent = 'Incorrect email or password.'; return; }
+  closeModal('loginModal');
+  toast('Logged in successfully.');
+});
 
 /* ======================================================================
-   10) STAFF
+   9) MODAL HELPERS
    ====================================================================== */
-async function loadStaff(){
-  if(!isConfigured) return;
-  const { data, error } = await sb.from('staff').select('*').order('created_at', { ascending: true });
-  if(error){ console.error(error); toast('Could not load staff: ' + error.message, true); return; }
-  state.staff = data || [];
-  state.loaded.staff = true;
-  renderStaff();
-}
+function openModal(id){ $('#'+id).classList.add('show'); }
+function closeModal(id){ $('#'+id).classList.remove('show'); }
+$$('[data-close]').forEach(el=> el.addEventListener('click', ()=> closeModal(el.dataset.close)));
+$$('.modal-overlay').forEach(ov=> ov.addEventListener('click', (e)=>{ if(e.target===ov) closeModal(ov.id); }));
 
-function renderStaff(){
-  const editable = isEditor();
-  $('#addStaffBtn').style.display = editable ? 'inline-flex' : 'none';
-
-  const list = $('#staffList');
-  if(!state.loaded.staff){
-    list.innerHTML = '<div class="spinner center"></div>';
-    return;
-  }
-  if(!state.staff.length){
-    list.innerHTML = '<p class="hint">No staff added yet.</p>';
-    return;
-  }
-
-  list.innerHTML = state.staff.map(s => `
-    <div class="member-row">
-      <div>
-        <div class="member-name">${escapeHtml(s.name)}</div>
-        <div class="member-role">${escapeHtml(s.role)}</div>
-      </div>
-      ${editable ? `<button class="btn btn-ghost btn-sm" data-edit-staff="${s.id}">Edit</button>` : ''}
-    </div>
-  `).join('');
-
-  if(editable){
-    $$('[data-edit-staff]').forEach(btn => {
-      btn.addEventListener('click', () => openStaffModal(state.staff.find(s => s.id === btn.dataset.editStaff)));
-    });
-  }
-}
-
-function openStaffModal(staffMember){
-  state.editingStaffId = staffMember ? staffMember.id : null;
-  $('#staffModalTitle').textContent = staffMember ? 'Edit staff' : 'Add staff';
-  $('#sName').value = staffMember?.name || '';
-  $('#sRole').value = staffMember?.role || '';
-  $('#deleteStaffBtn').style.display = staffMember ? 'inline-flex' : 'none';
-  $('#staffError').style.display = 'none';
-  openModal('staffModal');
-}
-
-async function saveStaff(){
-  const errEl = $('#staffError');
-  errEl.style.display = 'none';
-  const name = $('#sName').value.trim();
-  const role = $('#sRole').value.trim();
-  if(!name || !role){
-    errEl.textContent = 'Name and role are required.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  const { error } = state.editingStaffId
-    ? await sb.from('staff').update({ name, role }).eq('id', state.editingStaffId)
-    : await sb.from('staff').insert({ name, role });
-
-  if(error){
-    errEl.textContent = error.message;
-    errEl.style.display = 'block';
-    return;
-  }
-  closeModal('staffModal');
-  toast(state.editingStaffId ? 'Staff updated' : 'Staff added');
-}
-
-async function deleteStaff(){
-  if(!state.editingStaffId) return;
-  if(!(await confirmDialog('Delete this staff member?'))) return;
-  const { error } = await sb.from('staff').delete().eq('id', state.editingStaffId);
-  if(error){ toast(error.message, true); return; }
-  closeModal('staffModal');
-  toast('Staff deleted');
-}
+$('#f_competition').addEventListener('change', (e)=>{
+  $('#roundField').style.display = e.target.value === 'Friendly' ? 'none' : 'flex';
+});
 
 /* ======================================================================
-   11) MATCH SQUAD
+   9b) MATCH VIEW MODAL (click a card to open its own window)
    ====================================================================== */
-async function loadMatchSquad(){
-  if(!isConfigured) return;
-  let { data, error } = await sb.from('match_squads').select('*').eq('id', CURRENT_MATCH_SQUAD_ID).maybeSingle();
-  if(error){ console.error(error); toast('Could not load match squad: ' + error.message, true); return; }
+function openMatchViewModal(id){
+  const m = state.matches.find(x=>x.id===id);
+  if(!m) return;
+  const hasScore = m.home_score !== null && m.home_score !== undefined && m.away_score !== null && m.away_score !== undefined;
+  const dateStr = m.match_date ? new Date(m.match_date+'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'}) : 'Date TBD';
+  const compLabel = m.competition === 'SL1' ? 'Super League' : m.competition === 'Friendly' ? 'Friendly' : 'Cup';
 
-  if(!data){
-    const inserted = await sb.from('match_squads')
-      .upsert({ id: CURRENT_MATCH_SQUAD_ID, name: 'Matchday squad', squad_size: 20 })
-      .select().single();
-    data = inserted.data;
-  }
+  $('#viewModalTitle').textContent = `${m.home?.name||'?'} vs ${m.away?.name||'?'}`;
 
-  state.matchSquad = data;
-  $('#msOpponent').value = data?.opponent || '';
-  $('#msDate').value = data?.match_date || '';
-  $('#msSquadSize').value = data?.squad_size || 20;
-  $('#opponentLogoPreview').innerHTML = data?.opponent_logo_url
-    ? `<img src="${data.opponent_logo_url}" alt="">`
-    : '🛡️';
-  renderMatchSquad();
-}
-
-async function loadMatchSquadPlayers(){
-  if(!isConfigured || !state.matchSquad) return;
-  const { data, error } = await sb.from('match_squad_players').select('*').eq('match_squad_id', CURRENT_MATCH_SQUAD_ID);
-  if(error){ console.error(error); toast('Could not load squad players: ' + error.message, true); return; }
-  state.matchSquadPlayers = data || [];
-  state.loaded.squad = true;
-  renderMatchSquad();
-}
-
-function renderMatchSquad(){
-  const editable = isEditor();
-  $('#msOpponent').disabled = !editable;
-  $('#msDate').disabled = !editable;
-  $('#msSquadSize').disabled = !editable;
-
-  const size = state.matchSquad?.squad_size || 20;
-  const selectedIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
-  const selected = state.players.filter(p => selectedIds.has(p.id));
-  const notSelected = state.players.filter(p => !selectedIds.has(p.id));
-
-  const countTag = $('#selectedCount');
-  countTag.textContent = `${selected.length}/${size}`;
-  countTag.className = 'tag' + (selected.length > size ? ' tag-warn' : '');
-
-  if(!state.loaded.squad){
-    $('#selectedList').innerHTML = '<div class="spinner center"></div>';
-    $('#notSelectedList').innerHTML = '<div class="spinner center"></div>';
-    return;
-  }
-
-  const rowHtml = (p) => `
-    <div class="squad-row" data-player="${p.id}" draggable="${editable}">
-      <div class="avatar">${p.photo_url ? `<img src="${p.photo_url}" alt="">` : (p.shirt_number ?? '👤')}</div>
-      <div style="flex:1;">
-        <div class="sname">${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</div>
-        <div class="stag">${p.primary_position}${p.shirt_number ? ' · #' + p.shirt_number : ''}</div>
-      </div>
-    </div>`;
-
-  $('#selectedList').innerHTML = selected.length
-    ? selected.map(rowHtml).join('')
-    : '<p class="hint">No players selected yet.</p>';
-  $('#notSelectedList').innerHTML = notSelected.length
-    ? notSelected.map(rowHtml).join('')
-    : '<p class="hint">Everyone is selected.</p>';
-
-  if(editable){
-    $$('#view-matchSquad .squad-row').forEach(row => {
-      row.addEventListener('click', () => toggleSquadMember(row.dataset.player));
-      row.addEventListener('dragstart', () => { state.dragPlayerId = row.dataset.player; });
-    });
-  }
-}
-
-async function toggleSquadMember(playerId){
-  if(!isEditor()) return;
-  if(state.matchSquadPlayers.find(x => x.player_id === playerId)) await removeFromSquad(playerId);
-  else await addToSquad(playerId);
-}
-
-async function addToSquad(playerId){
-  if(state.matchSquadPlayers.find(x => x.player_id === playerId)) return;
-  const size = state.matchSquad?.squad_size || 20;
-  if(state.matchSquadPlayers.length >= size){
-    toast(`Squad is full (${size}). Increase squad size or remove someone first.`, true);
-    return;
-  }
-  await sb.from('match_squad_players').insert({ match_squad_id: CURRENT_MATCH_SQUAD_ID, player_id: playerId, is_selected: true });
-  await loadMatchSquadPlayers();
-}
-
-async function removeFromSquad(playerId){
-  const existing = state.matchSquadPlayers.find(x => x.player_id === playerId);
-  if(!existing) return;
-  await sb.from('match_squad_players').delete().eq('id', existing.id);
-  await loadMatchSquadPlayers();
-}
-
-async function onSquadSizeChange(e){
-  await sb.from('match_squads').update({ squad_size: Number(e.target.value) }).eq('id', CURRENT_MATCH_SQUAD_ID);
-}
-
-async function saveMatchInfo(){
-  await sb.from('match_squads').update({
-    opponent: $('#msOpponent').value.trim() || null,
-    match_date: $('#msDate').value || null,
-  }).eq('id', CURRENT_MATCH_SQUAD_ID);
-}
-
-async function uploadOpponentLogo(file){
-  $('#opponentLogoLabel').textContent = 'Uploading…';
-  const ext = file.name.split('.').pop();
-  const path = `opponent-logo-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await sb.storage.from('club-assets').upload(path, file, { upsert: true });
-  if(uploadError){
-    toast(uploadError.message, true);
-    $('#opponentLogoLabel').textContent = 'Upload opponent logo';
-    return;
-  }
-  const { data: publicUrl } = sb.storage.from('club-assets').getPublicUrl(path);
-  const { error: updateError } = await sb.from('match_squads')
-    .update({ opponent_logo_url: publicUrl.publicUrl }).eq('id', CURRENT_MATCH_SQUAD_ID);
-
-  $('#opponentLogoLabel').textContent = 'Upload opponent logo';
-  if(updateError){ toast(updateError.message, true); return; }
-  toast('Opponent logo updated');
-}
-
-/* ======================================================================
-   12) EXPORT — PDF, PNG, Print
-   ====================================================================== */
-function buildExportSheet(){
-  const theme = $('#exportTheme').value;
-  const optPhotos = $('#optPhotos').checked;
-  const optNumbers = $('#optNumbers').checked;
-  const optNames = $('#optNames').checked;
-  const optSubs = $('#optSubs').checked;
-  const optStaff = $('#optStaff').checked;
-
-  const squadPlayerIds = new Set(state.matchSquadPlayers.map(x => x.player_id));
-  const squadPlayers = state.players.filter(p => squadPlayerIds.has(p.id));
-  const startingIds = new Set(state.lineupPlayers.filter(lp => lp.slot_id).map(lp => lp.player_id));
-  const subPlayers = squadPlayers.filter(p => !startingIds.has(p.id));
-  const formation = currentFormation();
-
-  const clubName = state.club?.club_name || 'My Club';
-  const clubLogo = state.club?.club_logo_url;
-  const opponent = state.matchSquad?.opponent;
-  const opponentLogo = state.matchSquad?.opponent_logo_url;
-  const dateStr = state.matchSquad?.match_date
-    ? new Date(state.matchSquad.match_date + 'T00:00:00').toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
-    : new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-
-  function slotVisual(player){
-    const showPhoto = optPhotos && player.photo_url;
-    let circleHtml;
-    if(showPhoto) circleHtml = `<img src="${player.photo_url}" crossorigin="anonymous" alt="" style="width:100%;height:100%;object-fit:cover;">`;
-    else if(optNumbers) circleHtml = player.shirt_number ?? '';
-    else if(optNames) circleHtml = (player.last_name || '?')[0];
-    else circleHtml = '';
-
-    let labelHtml = '';
-    const bits = [];
-    if(optNumbers && showPhoto) bits.push(player.shirt_number ?? '');
-    if(optNames) bits.push(player.last_name);
-    if(bits.filter(Boolean).length) labelHtml = `<div class="ex-slot-label">${escapeHtml(bits.filter(Boolean).join(' · '))}</div>`;
-    return { circleHtml, labelHtml };
-  }
-
-  const bySlot = {};
-  state.lineupPlayers.forEach(lp => { if(lp.slot_id) bySlot[lp.slot_id] = lp; });
-
-  const slotsHtml = (formation?.slots || []).map(slot => {
-    const lp = bySlot[slot.id];
-    const player = lp ? state.players.find(p => p.id === lp.player_id) : null;
-    if(player){
-      const { circleHtml, labelHtml } = slotVisual(player);
-      return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
-        <div class="ex-slot-circle">${circleHtml}</div>
-        ${labelHtml}
-      </div>`;
-    }
-    return `<div class="ex-slot" style="left:${slot.x}%;top:${slot.y}%;">
-      <div class="ex-slot-empty">${slot.role}</div>
-    </div>`;
-  }).join('');
-
-  const subRow = (p) => {
-    const showPhoto = optPhotos && p.photo_url;
-    const avatarInner = showPhoto
-      ? `<img src="${p.photo_url}" crossorigin="anonymous" alt="" style="width:100%;height:100%;object-fit:cover;">`
-      : (optNumbers ? (p.shirt_number ?? '') : (p.last_name || '?')[0]);
-    const nameText = optNames ? `${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}` : '&nbsp;';
-    return `<div class="ex-sub-row">
-      <div class="ex-sub-num">${avatarInner}</div>
-      <div class="ex-sub-name">${nameText}</div>
-      <div class="ex-sub-pos">${p.primary_position}</div>
-    </div>`;
-  };
-  const staffRow = (s) => `<div class="ex-staff-row"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.role)}</span></div>`;
-
-  const showSubsPanel = optSubs || optStaff;
-  let panelInner = '';
-  if(optSubs){
-    panelInner += `
-      <div class="ex-subs-head">
-        <div class="ex-subs-title">Substitutes</div>
-        <div class="ex-subs-count">${subPlayers.length}</div>
-      </div>
-      <div class="ex-subs-sub">Match squad bench</div>
-      ${subPlayers.length ? subPlayers.map(subRow).join('') : '<p style="color:rgba(255,255,255,.4);font-size:12px;">No substitutes selected.</p>'}
-    `;
-  }
-  if(optStaff){
-    panelInner += `
-      <div class="ex-staff-block">
-        <div class="ex-subs-title" style="margin-bottom:8px;">Staff</div>
-        ${state.staff.length ? state.staff.map(staffRow).join('') : '<div class="ex-staff-row"><span>—</span></div>'}
-      </div>
-    `;
-  }
-  panelInner += `<div class="ex-footer-tag">Generated ${new Date().toLocaleDateString()}</div>`;
-
-  const sheet = $('#exportSheet');
-  sheet.setAttribute('data-theme', theme);
-  sheet.innerHTML = `
-    <div class="ex-topbar">
-      <div class="ex-club">
-        ${clubLogo ? `<img class="ex-club-logo" src="${clubLogo}" crossorigin="anonymous" alt="">` : ''}
-        <div><div class="ex-eyebrow">Match Day</div><div class="ex-team-name">${escapeHtml(clubName)}</div></div>
-      </div>
-      ${opponent ? `
-        <div class="ex-vs">VS</div>
-        <div class="ex-opponent">
-          ${opponentLogo ? `<img class="ex-opponent-logo" src="${opponentLogo}" crossorigin="anonymous" alt="">` : ''}
-          <div><div class="ex-eyebrow">Opponent</div><div class="ex-team-name">${escapeHtml(opponent)}</div></div>
-        </div>
-      ` : '<div class="ex-spacer"></div>'}
-      <div class="ex-spacer"></div>
-      <div class="ex-formation-badge"><div class="ex-eyebrow">Formation</div><div class="ex-formation-name">${formation ? formation.name : '—'}</div></div>
+  $('#viewModalBody').innerHTML = `
+    <div class="view-meta-row">
+      <span class="tag tag-${m.competition}">${compLabel}</span>
+      <span class="meta-right">${dateStr}</span>
+      ${m.round ? `<span class="meta-right">Round ${m.round}</span>` : ''}
     </div>
-    <div class="ex-datestr">${dateStr}</div>
-
-    <div class="ex-body">
-      <div class="ex-pitch-panel" style="${showSubsPanel ? '' : 'flex:1;'}">${slotsHtml}</div>
-      ${showSubsPanel ? `<div class="ex-subs-panel">${panelInner}</div>` : ''}
+    <div class="view-scoreboard">
+      <div class="team-block"><div class="team-logo">${logoHtml(m.home)}</div><div class="team-name">${escapeHtml(m.home?.name||'?')}</div></div>
+      <div class="score-chip ${hasScore?'':'tbd'}">${hasScore ? `${m.home_score}<span class="dash">:</span>${m.away_score}` : 'TBD'}</div>
+      <div class="team-block"><div class="team-logo">${logoHtml(m.away)}</div><div class="team-name">${escapeHtml(m.away?.name||'?')}</div></div>
+    </div>
+    ${(m.system || m.opp_system) ? `<div class="systems-row" style="padding:0;">${m.system?`<span>Our system: <b>${escapeHtml(m.system)}</b></span>`:''}${m.opp_system?`<span>Opponent: <b>${escapeHtml(m.opp_system)}</b></span>`:''}</div>` : ''}
+    ${m.notes ? `<div><div class="view-section-title">Notes</div><div class="notes-row" style="padding:0;">${escapeHtml(m.notes)}</div></div>` : ''}
+    <div class="view-section-title">Links</div>
+    <div class="view-links-grid">
+      ${viewLinkCard(m.full_match_url,'Full match','▶')}
+      ${viewLinkCard(m.highlights_url,'Highlights','★')}
+      ${viewLinkCard(m.video_url,'Video','🎥')}
+      ${viewLinkCard(m.report_url,'Report (PDF)','📄')}
     </div>
   `;
+
+  $('#viewEditBtn').style.display = state.session ? 'inline-flex' : 'none';
+  $('#viewEditBtn').onclick = ()=>{ closeModal('viewModal'); openMatchModal(id); };
+
+  openModal('viewModal');
 }
 
-function exportBgFor(theme){
-  if(theme === 'white') return '#ffffff';
-  if(theme === 'gray') return '#24262b';
-  return '#0c1a2e';
-}
-
-async function exportPNG(){
-  try{
-    buildExportSheet();
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
-    const link = document.createElement('a');
-    link.download = 'match-squad.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }catch(e){
-    console.error(e);
-    toast('Export failed — see console for details.', true);
-  }
-}
-
-async function exportPDF(){
-  try{
-    buildExportSheet();
-    await new Promise((r) => setTimeout(r, 60));
-    const canvas = await html2canvas($('#exportSheet'), { backgroundColor: exportBgFor($('#exportTheme').value), scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('l', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let imgWidth = pageWidth - 20;
-    let imgHeight = (canvas.height * imgWidth) / canvas.width;
-    if(imgHeight > pageHeight - 20){
-      imgHeight = pageHeight - 20;
-      imgWidth = (canvas.width * imgHeight) / canvas.height;
-    }
-    pdf.addImage(imgData, 'PNG', (pageWidth - imgWidth) / 2, 10, imgWidth, imgHeight);
-    pdf.save('match-squad.pdf');
-  }catch(e){
-    console.error(e);
-    toast('Export failed — see console for details.', true);
-  }
-}
-
-function printSquad(){
-  buildExportSheet();
-  setTimeout(() => window.print(), 60);
+function viewLinkCard(url, label, icon){
+  if(!url) return `<span class="view-link-card empty">${icon} ${label}</span>`;
+  return `<a class="view-link-card" href="${url}" target="_blank" rel="noopener">${icon} ${label}</a>`;
 }
 
 /* ======================================================================
-   13) UTIL
+   10) ADD / EDIT MATCH
+   ====================================================================== */
+$('#addMatchFab').addEventListener('click', ()=> openMatchModal(null));
+
+function openMatchModal(id){
+  state.editingMatchId = id;
+  const m = id ? state.matches.find(x=>x.id===id) : null;
+  $('#matchModalTitle').textContent = m ? 'Edit match' : 'New match';
+  $('#f_competition').value = m?.competition || state.activeTab || 'SL1';
+  $('#roundField').style.display = $('#f_competition').value === 'Friendly' ? 'none' : 'flex';
+  $('#f_round').value = m?.round || '';
+  $('#f_date').value = m?.match_date || '';
+  $('#f_home').value = m?.home_team_id || '';
+  $('#f_away').value = m?.away_team_id || '';
+  $('#f_home_score').value = (m?.home_score ?? '');
+  $('#f_away_score').value = (m?.away_score ?? '');
+  $('#f_system').value = m?.system || '';
+  $('#f_opp_system').value = m?.opp_system || '';
+  $('#f_full_match').value = m?.full_match_url || '';
+  $('#f_highlights').value = m?.highlights_url || '';
+  $('#f_video').value = m?.video_url || '';
+  $('#f_report').value = m?.report_url || '';
+  $('#f_report_file').value = '';
+  $('#reportUploadHint').textContent = '';
+  $('#f_notes').value = m?.notes || '';
+  $('#deleteMatchBtn').style.display = m ? 'inline-flex' : 'none';
+  openModal('matchModal');
+}
+
+$('#saveMatchBtn').addEventListener('click', async ()=>{
+  if(!state.session){ toast('You must be logged in.', true); return; }
+  const btn = $('#saveMatchBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  try{
+    let reportUrl = $('#f_report').value.trim() || null;
+    const file = $('#f_report_file').files[0];
+    if(file){
+      $('#reportUploadHint').textContent = 'Uploading PDF...';
+      const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: upErr } = await sb.storage.from('match-reports').upload(path, file, { upsert:true });
+      if(upErr) throw upErr;
+      const { data: pub } = sb.storage.from('match-reports').getPublicUrl(path);
+      reportUrl = pub.publicUrl;
+    }
+
+    const payload = {
+      competition: $('#f_competition').value,
+      round: $('#f_competition').value === 'Friendly' ? null : (parseInt($('#f_round').value) || null),
+      match_date: $('#f_date').value || null,
+      home_team_id: $('#f_home').value,
+      away_team_id: $('#f_away').value,
+      home_score: $('#f_home_score').value === '' ? null : parseInt($('#f_home_score').value),
+      away_score: $('#f_away_score').value === '' ? null : parseInt($('#f_away_score').value),
+      system: $('#f_system').value.trim() || null,
+      opp_system: $('#f_opp_system').value.trim() || null,
+      full_match_url: $('#f_full_match').value.trim() || null,
+      highlights_url: $('#f_highlights').value.trim() || null,
+      video_url: $('#f_video').value.trim() || null,
+      report_url: reportUrl,
+      notes: $('#f_notes').value.trim() || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if(!payload.home_team_id || !payload.away_team_id){ throw new Error('Select both teams.'); }
+
+    if(state.editingMatchId){
+      const { error } = await sb.from('matches').update(payload).eq('id', state.editingMatchId);
+      if(error) throw error;
+    } else {
+      payload.created_by = state.session.user.id;
+      const { error } = await sb.from('matches').insert(payload);
+      if(error) throw error;
+    }
+
+    await loadMatches();
+    closeModal('matchModal');
+    toast('Match saved.');
+  }catch(e){
+    console.error(e);
+    toast('Error: ' + (e.message||e), true);
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+});
+
+$('#deleteMatchBtn').addEventListener('click', async ()=>{
+  if(!confirm('Are you sure you want to delete this match?')) return;
+  try{
+    const { error } = await sb.from('matches').delete().eq('id', state.editingMatchId);
+    if(error) throw error;
+    await loadMatches();
+    closeModal('matchModal');
+    toast('Match deleted.');
+  }catch(e){
+    toast('Error: ' + (e.message||e), true);
+  }
+});
+
+/* ======================================================================
+   11) TEAMS: ADD / EDIT / DELETE
+   ====================================================================== */
+let editingTeamId = null;
+
+function openTeamModal(id){
+  editingTeamId = id || null;
+  const t = id ? state.teams.find(x=>x.id===id) : null;
+  $('#teamModalTitle').textContent = t ? 'Edit team' : 'Add team';
+  $('#t_name').value = t ? t.name : '';
+  $('#t_logo_file').value = '';
+  $('#deleteTeamBtn').style.display = t ? 'inline-flex' : 'none';
+  if(t && t.logo_url){
+    $('#currentLogoField').style.display = 'flex';
+    $('#currentLogoPreview').innerHTML = `<img src="${t.logo_url}" alt="${escapeHtml(t.name)}">`;
+    $('#logoFieldLabel').textContent = 'Replace logo (optional)';
+  } else {
+    $('#currentLogoField').style.display = 'none';
+    $('#logoFieldLabel').textContent = 'Logo (optional)';
+  }
+  openModal('teamModal');
+}
+
+$('#addTeamBtn').addEventListener('click', ()=> openTeamModal(null));
+
+$('#saveTeamBtn').addEventListener('click', async ()=>{
+  if(!state.session){ toast('You must be logged in.', true); return; }
+  const name = $('#t_name').value.trim();
+  if(!name){ toast('Enter a team name.', true); return; }
+  const btn = $('#saveTeamBtn'); btn.disabled = true; btn.textContent = 'Saving...';
+  try{
+    let logoUrl;
+    const file = $('#t_logo_file').files[0];
+    if(file){
+      const path = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+      const { error: upErr } = await sb.storage.from('team-logos').upload(path, file, { upsert:true });
+      if(upErr) throw upErr;
+      const { data: pub } = sb.storage.from('team-logos').getPublicUrl(path);
+      logoUrl = pub.publicUrl;
+    }
+    if(editingTeamId){
+      const payload = { name };
+      if(logoUrl !== undefined) payload.logo_url = logoUrl;
+      const { error } = await sb.from('teams').update(payload).eq('id', editingTeamId);
+      if(error) throw error;
+      toast('Team updated.');
+    } else {
+      const { error } = await sb.from('teams').insert({ name, logo_url: logoUrl || null });
+      if(error) throw error;
+      toast('Team added.');
+    }
+    await loadTeams();
+    await loadMatches();
+    renderTeams();
+    closeModal('teamModal');
+  }catch(e){
+    toast('Error: ' + (e.message||e), true);
+  }finally{
+    btn.disabled=false; btn.textContent='Save team';
+  }
+});
+
+$('#deleteTeamBtn').addEventListener('click', async ()=>{
+  if(!editingTeamId) return;
+  if(!confirm('Delete this team? This only works if no matches reference it.')) return;
+  try{
+    const { error } = await sb.from('teams').delete().eq('id', editingTeamId);
+    if(error) throw error;
+    await loadTeams();
+    renderTeams();
+    closeModal('teamModal');
+    toast('Team deleted.');
+  }catch(e){
+    toast('Cannot delete: this team is used in existing matches.', true);
+  }
+});
+
+/* ======================================================================
+   12) UTIL
    ====================================================================== */
 function escapeHtml(str){
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 init();
