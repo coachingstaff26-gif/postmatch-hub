@@ -127,6 +127,22 @@
     transition:box-shadow .15s ease, transform .15s ease;
   }
   .match-card:hover{box-shadow:0 4px 8px rgba(11,31,61,.06), 0 16px 36px rgba(11,31,61,.13);transform:translateY(-2px);}
+  .match-card{cursor:pointer;}
+
+  .view-scoreboard{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0 18px;}
+  .view-scoreboard .team-logo{width:64px;height:64px;}
+  .view-scoreboard .team-name{max-width:140px;font-size:13.5px;}
+  .view-scoreboard .score-chip{font-size:30px;padding:10px 18px;min-width:96px;}
+  .view-meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .view-links-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:6px;}
+  .view-link-card{
+    display:flex;align-items:center;gap:8px;padding:12px 14px;border-radius:10px;
+    background:var(--ice-100);border:1px solid var(--line);text-decoration:none;color:var(--blue-600);
+    font-weight:600;font-size:13.5px;
+  }
+  .view-link-card:hover{background:var(--blue-500);color:#fff;border-color:var(--blue-500);}
+  .view-link-card.empty{opacity:.35;pointer-events:none;}
+  .view-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:6px 0 4px;}
   .card-head{
     display:flex;align-items:center;justify-content:space-between;
     padding:10px 14px;background:var(--ice-100);border-bottom:1px solid var(--line);
@@ -382,6 +398,18 @@
   </div>
 </div>
 
+<!-- MATCH VIEW MODAL (read-only detail view opened by clicking a card) -->
+<div class="modal-overlay" id="viewModal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="viewModalTitle">Match details</h3><button class="modal-close" data-close="viewModal">&times;</button></div>
+    <div class="modal-body" id="viewModalBody"></div>
+    <div class="modal-foot">
+      <button class="btn btn-light" data-close="viewModal">Close</button>
+      <button class="btn btn-primary" id="viewEditBtn" style="display:none;">Edit this match</button>
+    </div>
+  </div>
+</div>
+
 <!-- TEAM MODAL -->
 <div class="modal-overlay" id="teamModal">
   <div class="modal">
@@ -548,7 +576,11 @@ function renderMatches(){
   $('#matchesView').innerHTML = `<div class="match-grid">${list.map(matchCardHtml).join('')}</div>`;
 
   $$('.match-card').forEach(el=>{
-    el.querySelector('.js-edit')?.addEventListener('click', ()=> openMatchModal(el.dataset.id));
+    el.addEventListener('click', ()=> openMatchViewModal(el.dataset.id));
+    el.querySelector('.js-edit')?.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      openMatchModal(el.dataset.id);
+    });
   });
 }
 
@@ -665,6 +697,51 @@ $$('.modal-overlay').forEach(ov=> ov.addEventListener('click', (e)=>{ if(e.targe
 $('#f_competition').addEventListener('change', (e)=>{
   $('#roundField').style.display = e.target.value === 'Friendly' ? 'none' : 'flex';
 });
+
+/* ======================================================================
+   9b) MATCH VIEW MODAL (click a card to open its own window)
+   ====================================================================== */
+function openMatchViewModal(id){
+  const m = state.matches.find(x=>x.id===id);
+  if(!m) return;
+  const hasScore = m.home_score !== null && m.home_score !== undefined && m.away_score !== null && m.away_score !== undefined;
+  const dateStr = m.match_date ? new Date(m.match_date+'T00:00:00').toLocaleDateString('en-GB', {day:'2-digit',month:'long',year:'numeric'}) : 'Date TBD';
+  const compLabel = m.competition === 'SL1' ? 'Super League' : m.competition === 'Friendly' ? 'Friendly' : 'Cup';
+
+  $('#viewModalTitle').textContent = `${m.home?.name||'?'} vs ${m.away?.name||'?'}`;
+
+  $('#viewModalBody').innerHTML = `
+    <div class="view-meta-row">
+      <span class="tag tag-${m.competition}">${compLabel}</span>
+      <span class="meta-right">${dateStr}</span>
+      ${m.round ? `<span class="meta-right">Round ${m.round}</span>` : ''}
+    </div>
+    <div class="view-scoreboard">
+      <div class="team-block"><div class="team-logo">${logoHtml(m.home)}</div><div class="team-name">${escapeHtml(m.home?.name||'?')}</div></div>
+      <div class="score-chip ${hasScore?'':'tbd'}">${hasScore ? `${m.home_score}<span class="dash">:</span>${m.away_score}` : 'TBD'}</div>
+      <div class="team-block"><div class="team-logo">${logoHtml(m.away)}</div><div class="team-name">${escapeHtml(m.away?.name||'?')}</div></div>
+    </div>
+    ${(m.system || m.opp_system) ? `<div class="systems-row" style="padding:0;">${m.system?`<span>Our system: <b>${escapeHtml(m.system)}</b></span>`:''}${m.opp_system?`<span>Opponent: <b>${escapeHtml(m.opp_system)}</b></span>`:''}</div>` : ''}
+    ${m.notes ? `<div><div class="view-section-title">Notes</div><div class="notes-row" style="padding:0;">${escapeHtml(m.notes)}</div></div>` : ''}
+    <div class="view-section-title">Links</div>
+    <div class="view-links-grid">
+      ${viewLinkCard(m.full_match_url,'Full match','▶')}
+      ${viewLinkCard(m.highlights_url,'Highlights','★')}
+      ${viewLinkCard(m.video_url,'Video','🎥')}
+      ${viewLinkCard(m.report_url,'Report (PDF)','📄')}
+    </div>
+  `;
+
+  $('#viewEditBtn').style.display = state.session ? 'inline-flex' : 'none';
+  $('#viewEditBtn').onclick = ()=>{ closeModal('viewModal'); openMatchModal(id); };
+
+  openModal('viewModal');
+}
+
+function viewLinkCard(url, label, icon){
+  if(!url) return `<span class="view-link-card empty">${icon} ${label}</span>`;
+  return `<a class="view-link-card" href="${url}" target="_blank" rel="noopener">${icon} ${label}</a>`;
+}
 
 /* ======================================================================
    10) ADD / EDIT MATCH
