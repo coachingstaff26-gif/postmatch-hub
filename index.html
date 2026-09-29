@@ -112,17 +112,17 @@ input:focus, select:focus{outline:2px solid var(--blue); border-color:var(--blue
 .stat-line-bar .a{background:var(--blue);}
 .stat-line-bar .b{background:var(--gray);}
 
-.chart-legend{display:flex; gap:18px; padding:10px 16px 0; font-size:11px; font-weight:700; letter-spacing:.03em;}
-.chart-legend span{display:flex; align-items:center; gap:6px;}
-.chart-legend .dot{width:10px; height:10px; border-radius:3px; display:inline-block;}
-.chart-row{padding:10px 16px;}
-.chart-row-label{font-size:12px; font-weight:700; color:var(--ink-dim); margin-bottom:6px; letter-spacing:.02em;}
-.chart-bar-track{display:flex; align-items:center; height:20px; margin-bottom:4px; gap:8px;}
-.chart-bar-track .track-bg{flex:1; height:14px; background:var(--navy-700); border-radius:4px; overflow:hidden;}
-.chart-bar-track .track-fill{height:100%; border-radius:4px; min-width:2px;}
+.chart-legend{display:flex; gap:16px; padding:6px 16px 2px; font-size:10px; font-weight:700; letter-spacing:.03em;}
+.chart-legend span{display:flex; align-items:center; gap:5px;}
+.chart-legend .dot{width:8px; height:8px; border-radius:2px; display:inline-block;}
+.chart-row{padding:3px 16px;}
+.chart-row-label{font-size:10.5px; font-weight:700; color:var(--ink-dim); margin-bottom:2px; letter-spacing:.02em;}
+.chart-bar-track{display:flex; align-items:center; height:12px; margin-bottom:2px; gap:6px;}
+.chart-bar-track .track-bg{flex:1; height:9px; background:var(--navy-700); border-radius:3px; overflow:hidden;}
+.chart-bar-track .track-fill{height:100%; border-radius:3px; min-width:2px;}
 .chart-bar-track .track-fill.own{background:var(--blue);}
 .chart-bar-track .track-fill.opp{background:var(--gray);}
-.chart-bar-track .track-val{width:34px; text-align:right; font-size:13px; font-weight:700;}
+.chart-bar-track .track-val{width:26px; text-align:right; font-size:10.5px; font-weight:700;}
 .index-band{margin:0 28px 16px; background:var(--navy-700); border-radius:10px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:18px; letter-spacing:.05em;}
 .index-band .vals{display:flex; gap:14px; font-size:20px;}
 .index-band .vals span:first-child{color:var(--blue);}
@@ -1139,11 +1139,11 @@ function renderReport(gameId){
   <div class="bottom2">
     <div class="bcard">
       <div class="lbl">POSSESSION TIME BY PITCH THIRD</div>
-      <div class="thirds-row">
-        <div class="tcol"><div class="n">DEFENSIVE</div><div class="v">${fmtSec(R.ownSec[0])}</div><div class="v" style="color:var(--gray);">${fmtSec(R.oppSec[0])}</div></div>
-        <div class="tcol"><div class="n">MIDDLE</div><div class="v">${fmtSec(R.ownSec[1])}</div><div class="v" style="color:var(--gray);">${fmtSec(R.oppSec[1])}</div></div>
-        <div class="tcol"><div class="n">ATTACKING</div><div class="v">${fmtSec(R.ownSec[2])}</div><div class="v" style="color:var(--gray);">${fmtSec(R.oppSec[2])}</div></div>
-      </div>
+      ${renderStatChart(own.name, opp.name, [
+        {label:'DEFENSIVE', ownDisplay:fmtSec(R.ownSec[0]), oppDisplay:fmtSec(R.oppSec[0]), ownScale:R.ownSec[0], oppScale:R.oppSec[0]},
+        {label:'MIDDLE', ownDisplay:fmtSec(R.ownSec[1]), oppDisplay:fmtSec(R.oppSec[1]), ownScale:R.ownSec[1], oppScale:R.oppSec[1]},
+        {label:'ATTACKING', ownDisplay:fmtSec(R.ownSec[2]), oppDisplay:fmtSec(R.oppSec[2]), ownScale:R.ownSec[2], oppScale:R.oppSec[2]},
+      ])}
     </div>
     <div class="bcard">
       <div class="lbl">TIME IN POSSESSION</div>
@@ -1162,10 +1162,10 @@ function renderReport(gameId){
 
   <div class="footbar">
     <div class="lbl">SET PIECES &amp; ENTRIES</div>
-    <div class="fb-grid">
-      <div class="fb-item"><div class="n">THROW-INS</div><div class="vals"><span class="a">${game.extra.throw_ins_own||0}</span><span class="b">${game.extra.throw_ins_opp||0}</span></div></div>
-      <div class="fb-item"><div class="n">FREE KICKS / CORNERS</div><div class="vals"><span class="a">${game.own.free_kicks||0}/${game.own.corner_kick||0}</span><span class="b">${game.opp.free_kicks||0}/${game.opp.corner_kick||0}</span></div></div>
-    </div>
+    ${renderStatChart(own.name, opp.name, [
+      {label:'THROW-INS', ownDisplay:String(game.extra.throw_ins_own||0), oppDisplay:String(game.extra.throw_ins_opp||0), ownScale:game.extra.throw_ins_own||0, oppScale:game.extra.throw_ins_opp||0},
+      {label:'FREE KICKS / CORNERS', ownDisplay:`${game.own.free_kicks||0}/${game.own.corner_kick||0}`, oppDisplay:`${game.opp.free_kicks||0}/${game.opp.corner_kick||0}`, ownScale:(game.own.free_kicks||0)+(game.own.corner_kick||0), oppScale:(game.opp.free_kicks||0)+(game.opp.corner_kick||0)},
+    ])}
     <div class="grid2" style="padding:14px 0 0;">
       <div>
         <div class="n" style="font-size:10px;color:var(--ink-dim);font-weight:700;margin-bottom:4px;">FINAL 3RD ENTRIES L / C / R — ${(own.name||'US').toUpperCase()}</div>
