@@ -112,17 +112,18 @@ input:focus, select:focus{outline:2px solid var(--blue); border-color:var(--blue
 .stat-line-bar .a{background:var(--blue);}
 .stat-line-bar .b{background:var(--gray);}
 
-.chart-legend{display:flex; gap:16px; padding:6px 16px 2px; font-size:10px; font-weight:700; letter-spacing:.03em;}
+.chart-legend{display:flex; gap:16px; padding:4px 16px 2px; font-size:9.5px; font-weight:700; letter-spacing:.03em;}
 .chart-legend span{display:flex; align-items:center; gap:5px;}
-.chart-legend .dot{width:8px; height:8px; border-radius:2px; display:inline-block;}
-.chart-row{padding:3px 16px;}
-.chart-row-label{font-size:10.5px; font-weight:700; color:var(--ink-dim); margin-bottom:2px; letter-spacing:.02em;}
-.chart-bar-track{display:flex; align-items:center; height:12px; margin-bottom:2px; gap:6px;}
-.chart-bar-track .track-bg{flex:1; height:9px; background:var(--navy-700); border-radius:3px; overflow:hidden;}
-.chart-bar-track .track-fill{height:100%; border-radius:3px; min-width:2px;}
+.chart-legend .dot{width:7px; height:7px; border-radius:2px; display:inline-block;}
+.chart-row{padding:1.5px 16px;}
+.chart-row-top{font-size:10.5px; font-weight:600; color:var(--ink-dim); margin-bottom:1px; letter-spacing:.01em;}
+.chart-bar-track{display:flex; align-items:center; height:11px; gap:6px;}
+.chart-bar-track .track-bg{flex:1; height:8px; display:flex; border-radius:3px; overflow:hidden; background:var(--navy-700);}
 .chart-bar-track .track-fill.own{background:var(--blue);}
 .chart-bar-track .track-fill.opp{background:var(--gray);}
-.chart-bar-track .track-val{width:26px; text-align:right; font-size:10.5px; font-weight:700;}
+.chart-bar-track .track-val{width:22px; font-size:10.5px; font-weight:700;}
+.chart-bar-track .track-val.own{text-align:right;}
+.chart-bar-track .track-val.opp{text-align:left; color:var(--ink-dim); font-weight:600;}
 .index-band{margin:0 28px 16px; background:var(--navy-700); border-radius:10px; padding:16px 22px; display:flex; justify-content:space-between; align-items:center; font-weight:800; font-size:18px; letter-spacing:.05em;}
 .index-band .vals{display:flex; gap:14px; font-size:20px;}
 .index-band .vals span:first-child{color:var(--blue);}
@@ -185,13 +186,13 @@ input:focus, select:focus{outline:2px solid var(--blue); border-color:var(--blue
   .stat-line{ padding:1.5px 12px !important; }
   .stat-line-top{ margin-bottom:0 !important; font-size:10px !important; }
   .stat-line-bar{ height:4px !important; }
-  .chart-legend{ padding:2px 12px 1px !important; font-size:8.5px !important; gap:10px !important; }
-  .chart-legend .dot{ width:6px !important; height:6px !important; }
-  .chart-row{ padding:1.5px 12px !important; }
-  .chart-row-label{ font-size:8.5px !important; margin-bottom:1px !important; }
-  .chart-bar-track{ height:7px !important; margin-bottom:1px !important; gap:4px !important; }
+  .chart-legend{ padding:1px 12px 1px !important; font-size:8px !important; gap:8px !important; }
+  .chart-legend .dot{ width:5px !important; height:5px !important; }
+  .chart-row{ padding:0.5px 12px !important; }
+  .chart-row-top{ font-size:8px !important; margin-bottom:0 !important; }
+  .chart-bar-track{ height:6px !important; gap:3px !important; }
   .chart-bar-track .track-bg{ height:4px !important; }
-  .chart-bar-track .track-val{ width:20px !important; font-size:8.5px !important; }
+  .chart-bar-track .track-val{ width:16px !important; font-size:8px !important; }
   .bottom2{ padding:0 20px 6px !important; gap:10px !important; }
   .bcard{ padding:6px 12px !important; }
   .bcard .lbl{ margin-bottom:4px !important; }
@@ -262,7 +263,8 @@ table.szn tr.avg-row td{font-weight:800; border-top:2px solid var(--blue); borde
 .export-light .chart-bar-track .track-bg{ background:#E3E7ED !important; }
 .export-light .chart-bar-track .track-fill.own{ background:#1C56C7 !important; }
 .export-light .chart-bar-track .track-fill.opp{ background:#94A0AC !important; }
-.export-light .chart-row-label{ color:#5b6b7c !important; }
+.export-light .chart-row-top{ color:#5b6b7c !important; }
+.export-light .chart-bar-track .track-val.opp{ color:#5b6b7c !important; }
 .export-light .index-band{ background:#E6EDFB !important; color:#0A1F3D !important; }
 .export-light .index-band .vals span:first-child{ color:#1C56C7 !important; }
 .export-light .index-band .vals span:last-child{ color:#94A0AC !important; }
@@ -1044,21 +1046,23 @@ function splitBar(leftVal, midVal, rightVal, leftLabel, midLabel, rightLabel){
   </div>`;
 }
 function renderStatChart(ownName, oppName, rows){
-  const max = Math.max(1, ...rows.map(r=>Math.max(r.ownScale, r.oppScale)));
-  const bar = (val, disp, cls) => `
-    <div class="chart-bar-track">
-      <div class="track-bg"><div class="track-fill ${cls}" style="width:${Math.max(2,val/max*100)}%;"></div></div>
-      <div class="track-val">${disp}</div>
-    </div>`;
   return `<div class="chart-legend">
       <span><span class="dot" style="background:var(--blue);"></span>${(ownName||'US').toUpperCase()}</span>
       <span><span class="dot" style="background:var(--gray);"></span>${(oppName||'OPPONENT').toUpperCase()}</span>
     </div>` +
-    rows.map(r=>`<div class="chart-row">
-      <div class="chart-row-label">${r.label}</div>
-      ${bar(r.ownScale, r.ownDisplay, 'own')}
-      ${bar(r.oppScale, r.oppDisplay, 'opp')}
-    </div>`).join('');
+    rows.map(r=>{
+      const total = Math.max(0.0001, r.ownScale + r.oppScale);
+      const ownPct = Math.max(4, r.ownScale/total*100);
+      const oppPct = Math.max(4, 100-ownPct);
+      return `<div class="chart-row">
+        <div class="chart-row-top"><span>${r.label}</span></div>
+        <div class="chart-bar-track">
+          <div class="track-val own">${r.ownDisplay}</div>
+          <div class="track-bg"><div class="track-fill own" style="width:${ownPct}%;"></div><div class="track-fill opp" style="width:${oppPct}%;"></div></div>
+          <div class="track-val opp">${r.oppDisplay}</div>
+        </div>
+      </div>`;
+    }).join('');
 }
 function renderReport(gameId){
   const game = STATE.games.find(g=>g.id===gameId);
